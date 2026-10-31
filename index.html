@@ -1,0 +1,2428 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0e13">
+  <title>LocalLink — Browser-Speicher synchronisieren</title>
+  <style>
+    :root {
+      --bg:#090d12; --surface:#11171e; --surface2:#151e27; --surface3:#1a2530;
+      --stroke:#28343f; --stroke2:#33424e; --text:#ebf2f5; --muted:#91a2b0;
+      --subtle:#657885; --lime:#b7f873; --mint:#91e6be; --blue:#87cafe;
+      --yellow:#ffd48a; --danger:#ff9292; --shadow:0 18px 50px rgba(0,0,0,.17);
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      font-synthesis:none;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(900px 440px at 90% -150px,rgba(86,139,118,.14),transparent 73%),radial-gradient(600px 450px at 0 34%,rgba(41,94,121,.08),transparent 65%),var(--bg);font-size:14px;line-height:1.5}
+    button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+    ::selection{background:rgba(183,248,115,.28)}
+    .i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .i.sm{width:15px;height:15px} .i.lg{width:21px;height:21px}
+    .wrap{max-width:1320px;margin:0 auto;padding:0 34px}
+    .topbar{border-bottom:1px solid #202b34;background:rgba(9,13,18,.67);backdrop-filter:blur(16px)}
+    .topbar-inner{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .brand{display:flex;align-items:center;gap:13px;min-width:0}
+    .brand-symbol{width:38px;height:38px;display:grid;place-items:center;color:#08110b;border-radius:12px;background:var(--lime);box-shadow:0 0 27px rgba(183,248,115,.1)}
+    .brand-symbol .i{height:23px;width:23px;stroke-width:2.2}
+    .brand-word{font-size:19px;font-weight:780;letter-spacing:-.7px;line-height:1.05}
+    .brand-word span{color:var(--lime)}
+    .brand-desc{font-size:10px;letter-spacing:1.9px;font-weight:700;color:var(--subtle);margin-top:4px}
+    .nav-right{display:flex;align-items:center;gap:19px}
+    .chip-top{border:1px solid var(--stroke);border-radius:99px;padding:7px 12px;color:#a8b8c3;font-size:11px;letter-spacing:.5px;font-weight:700;white-space:nowrap}
+    .connect-status{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;color:#b9c6ce;white-space:nowrap}
+    .dot{display:inline-block;width:8px;height:8px;flex:none;border-radius:50%;background:#8996a0;box-shadow:0 0 0 4px rgba(139,154,166,.07)}
+    .dot.online{background:var(--lime);box-shadow:0 0 0 4px rgba(183,248,115,.1)}
+    .dot.waiting{background:var(--yellow);box-shadow:0 0 0 4px rgba(255,212,138,.1)}
+    .dot.error{background:var(--danger);box-shadow:0 0 0 4px rgba(255,146,146,.1)}
+    main{padding-bottom:48px}
+    .hero{padding-top:42px;padding-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:32px}
+    .eyebrow{color:var(--lime);font-size:11px;letter-spacing:2.15px;font-weight:800;text-transform:uppercase}
+    h1,h2,h3,p{margin:0}
+    h1{font-size:clamp(34px,3.7vw,55px);letter-spacing:-2.35px;line-height:1.085;font-weight:780;margin-top:12px}
+    h1 .accent{color:var(--lime)}
+    .hero-desc{max-width:680px;color:var(--muted);font-size:14px;line-height:1.8;margin-top:14px}
+    .hero-actions{display:flex;align-items:center;gap:11px;margin-top:19px;flex-wrap:wrap}
+    .button{border:1px solid var(--stroke2);background:#1a2630;border-radius:11px;color:#dae6ed;min-height:40px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:12px;font-weight:750;transition:background .15s,border-color .15s,transform .15s;white-space:nowrap}
+    .button:hover:not(:disabled){background:#24323d;border-color:#587080;transform:translateY(-1px)}
+    .button.primary{background:var(--lime);color:#152414;border-color:var(--lime);box-shadow:0 2px 16px rgba(183,248,115,.06)}
+    .button.primary:hover:not(:disabled){background:#d0ff9d;border-color:#d0ff9d}
+    .button.ghost{background:transparent;border-color:transparent;color:#a0b2bd}
+    .button.ghost:hover:not(:disabled){background:#1b2730}
+    .button.slim{min-height:34px;padding:0 11px;font-size:12px}
+    .button.icononly{width:36px;min-height:36px;padding:0}
+    .hero-metrics{width:330px;flex:none;display:grid;grid-template-columns:1fr 1fr;gap:1px;border:1px solid var(--stroke);background:var(--stroke);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+    .metric{background:#111920;padding:17px 20px 16px}
+    .metric .metric-label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.1px;color:var(--subtle);font-weight:800;margin-bottom:6px}
+    .metric strong{font-size:24px;letter-spacing:-.8px;line-height:1.2;font-weight:760}
+    .metric .metric-note{font-size:10px;color:var(--muted);margin-top:4px}
+    .section-header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:16px}
+    .section-title{display:flex;align-items:center;gap:12px;font-size:18px;letter-spacing:-.55px;font-weight:740}
+    .section-no{font-size:11px;border:1px solid #405043;background:rgba(183,248,115,.07);color:var(--lime);width:30px;height:30px;border-radius:9px;display:grid;place-items:center;letter-spacing:0;font-weight:750}
+    .section-tip{color:var(--subtle);font-size:12px}
+    .connection-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:stretch}
+    .card{background:linear-gradient(145deg,rgba(22,30,38,.96),rgba(17,23,30,.96));border:1px solid var(--stroke);border-radius:17px;box-shadow:var(--shadow)}
+    .conn-card{padding:22px 22px 19px;min-height:194px;position:relative;overflow:hidden}
+    .conn-card:before{content:"";position:absolute;right:-80px;top:-125px;width:260px;height:260px;border:1px solid rgba(142,232,193,.08);border-radius:50%;pointer-events:none}
+    .card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .card-kicker{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1.45px;font-weight:800}
+    .role-tag{border:1px solid var(--stroke2);padding:4px 9px;border-radius:6px;color:#b7c7d0;font-size:10px;letter-spacing:.9px;font-weight:800}
+    .conn-card h3{font-size:17px;letter-spacing:-.5px;margin-top:10px;margin-bottom:3px}
+    .conn-card p{font-size:12px;color:var(--muted);max-width:420px;line-height:1.7}
+    .conn-action{margin-top:17px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .conn-action .hint{font-size:11px;color:var(--subtle)}
+    .form-row{display:flex;gap:9px;margin-top:16px}
+    .text-input{height:40px;min-width:0;flex:1;border:1px solid #34424e;background:#0c1319;color:var(--text);border-radius:10px;padding:0 13px;font-size:12px;outline:0}
+    .text-input::placeholder{color:#657783}
+    .text-input:focus{border-color:#a6db83;box-shadow:0 0 0 2px rgba(183,248,115,.09)}
+    .invite{margin-top:18px;padding-top:17px;border-top:1px solid var(--stroke);display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:17px;align-items:center}
+    .invite-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--subtle);font-weight:800;margin-bottom:7px}
+    .invite-id{font-weight:760;font-size:12px;letter-spacing:0.25px;overflow-wrap:anywhere;margin-bottom:8px;color:#dcebd4}
+    .invite-url{display:block;color:var(--muted);font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:11px}
+    .invite-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .qr-frame{width:120px;min-height:120px;background:white;border-radius:11px;padding:7px;display:flex;justify-content:center;align-items:center;overflow:hidden}
+    .qr-frame canvas,.qr-frame img{max-width:106px!important;max-height:106px!important;display:block}
+    .qr-placeholder{font-size:10px;text-align:center;color:#55616b;line-height:1.5}
+    .small-note{display:flex;align-items:flex-start;gap:8px;color:#8799a6;font-size:11px;line-height:1.65;margin-top:14px}
+    .small-note .i{margin-top:1px;color:#9dc8d3}
+    .small-note.warn{color:#e0c999}.small-note.warn .i{color:var(--yellow)}
+    .session-message{margin-top:14px;display:flex;gap:9px;align-items:center;color:#c9d7df;font-size:12px;line-height:1.5}
+    .session-message .dot{width:7px;height:7px}
+    .compare-section{margin-top:35px}
+    .toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:13px}
+    .filters{display:flex;align-items:center;gap:5px;overflow-x:auto;max-width:100%;padding-bottom:2px}
+    .filter{border:1px solid transparent;background:transparent;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;padding:8px 12px;border-radius:8px;transition:color .15s,background .15s}
+    .filter.active{background:#1d2c27;border-color:#415a43;color:#d3f3c2}
+    .filter:hover{background:#1d2832;color:var(--text)}
+    .tools{display:flex;align-items:center;gap:8px}
+    .search-wrap{position:relative}
+    .search-wrap .i{position:absolute;top:11px;left:12px;color:#8399a5;width:15px;height:15px}
+    .search-wrap input{width:218px;height:37px;background:#101921;border:1px solid var(--stroke);border-radius:9px;color:var(--text);padding:0 10px 0 34px;font-size:12px;outline:0}
+    .search-wrap input:focus{border-color:#83bba3}
+    .table-shell{border:1px solid var(--stroke);background:#10161d;border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+    .table-scroll{width:100%;overflow-x:auto}
+    table{border-collapse:collapse;width:100%;table-layout:fixed;text-align:left}
+    thead{background:#151f27}
+    thead th{padding:15px 18px;border-bottom:1px solid var(--stroke);color:#8195a1;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;vertical-align:middle}
+    thead th:nth-child(1){width:28%} thead th:nth-child(2),thead th:nth-child(3){width:20%} thead th:nth-child(4){width:18%}thead th:nth-child(5){width:14%;text-align:right}
+    .th-mini{font-size:10px;color:var(--subtle);letter-spacing:normal;text-transform:none;font-weight:500;display:block;margin-top:3px}
+    tbody tr{border-bottom:1px solid #222c36;transition:background .12s}tbody tr:last-child{border-bottom:0}tbody tr:hover{background:#151f27}
+    td{padding:16px 18px;vertical-align:middle;overflow-wrap:anywhere}
+    .entry{display:flex;align-items:center;gap:11px;min-width:0}
+    .entry-icon{width:36px;height:36px;display:grid;place-items:center;flex:none;border-radius:10px;background:rgba(130,202,249,.085);color:var(--blue);border:1px solid rgba(130,202,249,.13)}
+    .entry-icon.db{color:var(--mint);background:rgba(145,230,190,.07);border-color:rgba(145,230,190,.12)}
+    .entry-name{font-size:12.5px;font-weight:740;color:#e5eef2;word-break:break-word}
+    .entry-detail{font-size:11px;color:var(--subtle);margin-top:3px;word-break:break-word}
+    .size-value{font-size:13px;font-weight:720;color:#dce6ec;display:block;letter-spacing:-.1px}
+    .secondary-line{font-size:11px;color:var(--subtle);display:block;margin-top:3px}
+    .missing{font-size:12px;color:#697a86}
+    .side-emphasis{color:#c9f3ac}
+    .compare-pills{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;font-weight:730;border:1px solid transparent;border-radius:6px;font-size:10px;line-height:1.3;white-space:nowrap}
+    .pill.equal{background:#1b352b;border-color:#2e5943;color:#a8e7c5}
+    .pill.newer{background:#2c3524;border-color:#515e36;color:#cdeaa0}
+    .pill.remote-newer{background:#273747;border-color:#3d5b77;color:#a5d9ff}
+    .pill.bigger{background:#28323b;border-color:#384857;color:#b7c8d6}
+    .pill.unknown{background:#242c34;border-color:#34414c;color:#91a5b3}
+    .row-actions{display:flex;gap:7px;justify-content:flex-end;align-items:center}
+    .act-btn{width:34px;height:34px;border-radius:9px;border:1px solid #3b4a56;color:#b8cbd6;background:#1a2630;display:grid;place-items:center;transition:background .16s,border-color .16s}
+    .act-btn:hover:not(:disabled){background:#2b3d4b;border-color:#8fa7b5}
+    .act-btn.send:hover:not(:disabled){color:var(--lime);border-color:#759f52}
+    .act-btn.pull:hover:not(:disabled){color:var(--blue);border-color:#578cad}
+    .act-btn .i{width:16px;height:16px}
+    .table-footer{padding:13px 19px;background:#131b23;border-top:1px solid #28333d;display:flex;align-items:center;justify-content:space-between;gap:15px;color:#8196a2;font-size:11px}
+    .foot-legend{display:flex;gap:15px;flex-wrap:wrap}.foot-legend span{display:flex;align-items:center;gap:6px}
+    .legend-arrow{color:var(--lime);font-weight:900;font-size:14px}.legend-arrow.blue{color:var(--blue)}
+    .empty{padding:43px 20px;text-align:center}.empty-icon{margin:0 auto 11px;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#1a2831;color:#a5becc}
+    .empty-title{font-size:14px;font-weight:760}.empty p{font-size:12px;color:var(--muted);margin:7px auto 0;max-width:420px}
+    .bottom-grid{margin-top:22px;display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:stretch}
+    .info-card{padding:21px 22px}
+    .info-head{display:flex;align-items:center;gap:10px;font-weight:760;font-size:13px;margin-bottom:12px}.info-head .i{color:var(--lime)}
+    .info-card p{font-size:12px;color:var(--muted);line-height:1.85}
+    .info-card strong{font-weight:740;color:#d9e3e8}
+    .activity-log{padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+    .activity-log li{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:11px;color:#bac8d0;min-height:16px}
+    .activity-log li .time{color:var(--subtle);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .page-footer{display:flex;justify-content:space-between;gap:14px;padding-top:25px;font-size:11px;color:#647682;flex-wrap:wrap}
+    .link-plain{color:#b6dfae;text-decoration:none}.link-plain:hover{text-decoration:underline}
+    .toast-area{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:9px;z-index:90;max-width:min(400px,calc(100vw - 32px));pointer-events:none}
+    .toast{display:flex;align-items:flex-start;gap:10px;padding:13px 15px;border:1px solid #405b4c;background:#193128;color:#d9f8e7;box-shadow:0 18px 45px rgba(0,0,0,.37);border-radius:11px;font-size:12px;line-height:1.55;animation:slideIn .2s ease;pointer-events:auto}
+    .toast.error{background:#382529;border-color:#80515a;color:#ffdbdf}.toast .i{width:16px;height:16px;margin-top:1px}
+    @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .transfer{position:fixed;left:50%;transform:translateX(-50%);bottom:21px;width:min(500px,calc(100vw - 32px));z-index:80;background:#1a252c;border:1px solid #486258;border-radius:15px;padding:14px 17px 16px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
+    .transfer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-weight:750;font-size:12px}
+    .transfer-head span:nth-child(2){color:var(--lime);font-variant-numeric:tabular-nums}
+    .progress-track{height:5px;border-radius:99px;background:#35444d;overflow:hidden}.progress-bar{height:100%;background:linear-gradient(90deg,var(--mint),var(--lime));border-radius:99px;width:0%;transition:width .18s}
+    .transfer-desc{font-size:11px;color:#a0b4bf;margin-top:8px}
+    [hidden]{display:none!important}
+    @media(max-width:1050px){.hero-metrics{width:280px}.wrap{padding-left:24px;padding-right:24px}thead th,td{padding-left:13px;padding-right:13px}thead th:nth-child(1){width:29%}thead th:nth-child(2),thead th:nth-child(3){width:19%}thead th:nth-child(4){width:18%}thead th:nth-child(5){width:15%}}
+    @media(max-width:780px){.hero{align-items:stretch;flex-direction:column;gap:22px}.hero-metrics{width:100%}.connection-grid,.bottom-grid{grid-template-columns:1fr}.hero{padding-top:29px}.compare-section{margin-top:29px}.chip-top{display:none}table{min-width:790px}.nav-right{gap:8px}.brand-desc{letter-spacing:1.1px}.section-tip{display:none}.section-title{font-size:16px}}
+    @media(max-width:500px){.wrap{padding-left:15px;padding-right:15px}.topbar-inner{min-height:67px}.brand-symbol{width:34px;height:34px}.brand-word{font-size:17px}.brand-desc{font-size:9px}.connect-status{font-size:11px}h1{letter-spacing:-1.5px;font-size:37px}.conn-card{padding:19px}.invite{grid-template-columns:minmax(0,1fr) 102px;gap:10px}.qr-frame{width:102px;min-height:102px}.qr-frame canvas,.qr-frame img{max-width:88px!important;max-height:88px!important}.tools{width:100%}.search-wrap{flex:1}.search-wrap input{width:100%}.button .mobile-hide{display:none}.form-row .button{padding-left:11px;padding-right:11px}.table-footer{align-items:flex-start;flex-direction:column}.hero-actions .button{flex:1}.metric{padding:15px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></symbol>
+    <symbol id="i-storage" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 14h5"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 17V3M7 8l5-5 5 5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v14M7 12l5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5L3 9M3 4v5h5M4 13a8 8 0 0 0 14 5l3-3M21 20v-5h-5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3A5 5 0 0 0 13.46 3.5l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3A5 5 0 0 0 10.54 20.5l1.71-1.71"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 22 7-4V6l-7-4-7 4v12l7 4Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand" aria-label="LocalLink">
+        <div class="brand-symbol"><svg class="i"><use href="#i-layers"/></svg></div>
+        <div><div class="brand-word">local<span>link.</span></div><div class="brand-desc">BROWSER STORAGE BRIDGE</div></div>
+      </div>
+      <div class="nav-right">
+        <span class="chip-top">LOCALSTORAGE + INDEXEDDB</span>
+        <div class="connect-status"><span class="dot" id="statusDot"></span><span id="statusText">Nicht verbunden</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">01 / Peer-to-peer Synchronisierung</div>
+        <h1>Dein Speicher.<br><span class="accent">Auf beiden Geräten.</span></h1>
+        <p class="hero-desc">Vergleiche localStorage-Einträge und IndexedDB-Datenbanken direkt zwischen zwei Browsern. Du entscheidest als Host, welche Daten gesendet oder übernommen werden.</p>
+        <div class="hero-actions">
+          <button class="button" id="modifyDemoBtn"><svg class="i sm"><use href="#i-zap"/></svg> Testdaten verändern</button>
+          <button class="button ghost" id="addDbBtn"><svg class="i sm"><use href="#i-database"/></svg> Datenbank hinzufügen</button>
+        </div>
+      </div>
+      <div class="hero-metrics" aria-label="Statistik">
+        <div class="metric"><span class="metric-label">Dieses Gerät</span><strong id="localStat">–</strong><div class="metric-note">Speichereinträge</div></div>
+        <div class="metric"><span class="metric-label">Gegenstelle</span><strong id="remoteStat">–</strong><div class="metric-note">Speichereinträge</div></div>
+        <div class="metric"><span class="metric-label">Unterschiede</span><strong id="diffStat">–</strong><div class="metric-note">Datenstände</div></div>
+        <div class="metric"><span class="metric-label">Verbindung</span><strong id="roleStat" style="font-size:19px">Offline</strong><div class="metric-note" id="roleNote">Noch keine Sitzung</div></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="connectHeading">
+      <div class="section-header"><h2 class="section-title" id="connectHeading"><span class="section-no">01</span> Geräte verbinden</h2><span class="section-tip">Keine Registrierung · Verbindung über PeerJS</span></div>
+      <div class="connection-grid">
+        <div class="card conn-card">
+          <div class="card-top"><span class="card-kicker">Sitzung freigeben</span><span class="role-tag">HOST</span></div>
+          <h3>Verbindung erstellen</h3>
+          <p>Starte eine Sitzung und teile den Link oder QR-Code mit dem zweiten Gerät.</p>
+          <div class="conn-action" id="hostStartBox"><button class="button primary" id="createHostBtn"><svg class="i sm"><use href="#i-link"/></svg> Sitzung erstellen <svg class="i sm"><use href="#i-arrow"/></svg></button><span class="hint">Zufällige Session-ID</span></div>
+          <div class="session-message" id="hostWaiting" hidden><span class="dot waiting"></span><span id="hostWaitingText">Sitzung wird vorbereitet …</span></div>
+          <div class="invite" id="inviteBox" hidden>
+            <div>
+              <div class="invite-label">Deine Session-ID</div><div class="invite-id" id="sessionIdText">–</div>
+              <span class="invite-url" id="inviteUrlText">–</span>
+              <div class="invite-actions"><button class="button slim primary" id="copyInviteBtn"><svg class="i sm"><use href="#i-copy"/></svg> Link kopieren</button><button class="button slim" id="copyIdBtn">ID kopieren</button></div>
+            </div>
+            <div class="qr-frame" id="qrBox"><div class="qr-placeholder">QR-Code wird geladen</div></div>
+          </div>
+        </div>
+        <div class="card conn-card">
+          <div class="card-top"><span class="card-kicker">Mit Sitzung verbinden</span><span class="role-tag">GAST</span></div>
+          <h3>Verbindung beitreten</h3>
+          <p>Öffne den Einladungslink oder gib die Session-ID des Hosts ein.</p>
+          <form class="form-row" id="joinForm" autocomplete="off"><input class="text-input" id="joinInput" placeholder="Session-ID oder Einladungslink" aria-label="Session-ID oder Einladungslink" spellcheck="false"><button class="button primary" id="joinBtn" type="submit">Verbinden <svg class="i sm"><use href="#i-arrow"/></svg></button></form>
+          <div class="session-message" id="guestMessage" hidden><span class="dot waiting"></span><span id="guestMessageText">Verbindung wird hergestellt …</span></div>
+          <div class="conn-action" id="disconnectRow" hidden><button class="button slim" id="disconnectBtn"><svg class="i sm"><use href="#i-x"/></svg> Verbindung beenden</button></div>
+        </div>
+      </div>
+      <div class="small-note" id="originNote"><svg class="i sm"><use href="#i-info"/></svg><span>Die beiden Geräte müssen dieselbe HTML-App unter einer erreichbaren HTTPS-Adresse öffnen. Speicherzugriff ist auf den jeweiligen Origin (Protokoll, Domain und Port) beschränkt.</span></div>
+    </section>
+
+    <section class="compare-section" aria-labelledby="compareHeading">
+      <div class="section-header"><h2 class="section-title" id="compareHeading"><span class="section-no">02</span> Speichervergleich</h2><span class="section-tip">Übertragungen nur auf Anforderung des Hosts</span></div>
+      <div class="toolbar">
+        <div class="filters" id="filters" role="group" aria-label="Speichertyp filtern">
+          <button class="filter active" data-filter="all" aria-pressed="true">Alle <span id="allFilterCount"></span></button>
+          <button class="filter" data-filter="ls" aria-pressed="false">localStorage</button>
+          <button class="filter" data-filter="db" aria-pressed="false">IndexedDB</button>
+          <button class="filter" data-filter="diff" aria-pressed="false">Unterschiede</button>
+        </div>
+        <div class="tools"><div class="search-wrap"><svg class="i"><use href="#i-search"/></svg><input id="searchInput" placeholder="Speicher durchsuchen …" aria-label="Speicher durchsuchen"></div><button class="button icononly" id="refreshBtn" title="Beide Seiten neu einlesen" aria-label="Speicher neu einlesen"><svg class="i sm"><use href="#i-refresh"/></svg></button></div>
+      </div>
+      <div class="table-shell">
+        <div class="table-scroll">
+          <table aria-label="Vergleich lokaler und entfernter Browser-Speicher">
+            <thead><tr><th>Speichereintrag</th><th>Dieses Gerät<span class="th-mini" id="thisDeviceLabel">Lokal</span></th><th>Gegenstelle<span class="th-mini" id="remoteDeviceLabel">Noch nicht verbunden</span></th><th>Vergleich</th><th>Aktion</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer"><div class="foot-legend"><span><span class="legend-arrow">↑</span> An Gegenstelle senden</span><span><span class="legend-arrow blue">↓</span> Von Gegenstelle holen</span></div><span id="tableFootCount">Speicher wird eingelesen …</span></div>
+      </div>
+    </section>
+
+    <div class="bottom-grid">
+      <section class="card info-card" aria-label="Wichtige Hinweise">
+        <div class="info-head"><svg class="i"><use href="#i-shield"/></svg> Privater Datentransfer</div>
+        <p>Die Verbindung nutzt <strong>WebRTC DataChannels</strong>. PeerJS Cloud hilft beim Verbindungsaufbau; die Daten werden anschließend über WebRTC ausgetauscht (gegebenenfalls über einen TURN-Relay, sofern konfiguriert). <strong>Nur der Host startet Übertragungen.</strong> Eine IndexedDB-Übernahme ersetzt die komplette Zieldatenbank einschließlich ihrer Struktur. Größere Datenbanken und nicht serialisierbare Datentypen werden übersprungen.</p>
+      </section>
+      <section class="card info-card" aria-label="Aktivitäten">
+        <div class="info-head"><svg class="i"><use href="#i-activity"/></svg> Aktivitäten</div>
+        <ul class="activity-log" id="activityList"><li><span>App wird gestartet …</span><span class="time">–</span></li></ul>
+      </section>
+    </div>
+    <footer class="page-footer"><span>LOCAL<span style="color:var(--lime)">LINK</span> · Eine HTML-Datei · Keine Konten</span><span>Zeiten nur für durch die App verwaltete Änderungen · Größen sind Schätzungen der serialisierten Daten</span></footer>
+  </main>
+
+  <div class="transfer" id="transferPanel" hidden role="status" aria-live="polite"><div class="transfer-head"><span id="transferTitle">Übertragung läuft</span><span id="transferPercent">0 %</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="transfer-desc" id="transferDesc">Daten werden vorbereitet …</div></div>
+  <div class="toast-area" id="toastArea" aria-live="polite"></div>
+
+  <!-- PeerJS is loaded from CDN; application logic, QR-code generation and styling are in this HTML file. -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+  <script>
+  /* QRCode for JavaScript (c) 2009 Kazuhiko Arase, MIT License.
+     Bundled from qrcode-terminal's QRCode vendor implementation. */
+  (function(){
+    const modules={
+'QRMode':function(require,module,exports){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+},
+'QR8bitByte':function(require,module,exports){
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+},
+'QRMath':function(require,module,exports){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+},
+'QRPolynomial':function(require,module,exports){
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+},
+'QRMaskPattern':function(require,module,exports){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+},
+'QRErrorCorrectLevel':function(require,module,exports){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+},
+'QRRSBlock':function(require,module,exports){
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+},
+'QRBitBuffer':function(require,module,exports){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+},
+'QRUtil':function(require,module,exports){
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+},
+'index':function(require,module,exports){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+}
+    };
+    const cached={};
+    function requireLocal(name){
+      name=name.replace(/^\.\//,'');
+      if(cached[name])return cached[name].exports;
+      if(!modules[name])throw new Error('QR module missing: '+name);
+      const module={exports:{}};cached[name]=module;
+      modules[name](requireLocal,module,module.exports);
+      return module.exports;
+    }
+    window.LocalLinkQRCore=requireLocal('index');
+  })();
+  </script>
+  <script>
+  'use strict';
+  (() => {
+    const $ = id => document.getElementById(id);
+    const icon = id => `<svg class="i sm" aria-hidden="true"><use href="#i-${id}"></use></svg>`;
+    const INTERNAL = '__locallink_internal_';
+    const META_KEY = INTERNAL + 'meta_v1';
+    const DB_REGISTRY_KEY = INTERNAL + 'database_registry_v1';
+    const SEED_LS_KEY = INTERNAL + 'seed_ls_v1';
+    const SEED_DB_KEY = INTERNAL + 'seed_db_v1';
+    const DEMO_DB = 'locallink_demo';
+    const MAX_CHARS = 20 * 1024 * 1024;
+    const MAX_RECORDS = 25000;
+    const CHUNK = 12 * 1024;
+    const WINDOW = 24;
+    const MAX_MESSAGE_ITEMS = 10000;
+    const state = {
+      role:'idle', session:'', peer:null, conn:null, isConnected:false, peerReady:false,
+      local:[], remote:[], cache:new Map(), filter:'all', search:'', activity:[],
+      metadata:{}, pendingTimes:new Map(), scanning:false, rescan:false,
+      transfer:null, incoming:null, outgoing:null, pendingPullId:null,
+      refreshTimer:null
+    };
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function formatBytes(size) {
+      if (size === null || size === undefined || !Number.isFinite(Number(size))) return '–';
+      const n = Number(size);
+      if (n < 1024) return `${n} B`;
+      if (n < 1024*1024) return `${(n/1024).toFixed(n<10*1024?1:0).replace('.',',')} KB`;
+      return `${(n/(1024*1024)).toFixed(2).replace('.',',')} MB`;
+    }
+    function formatDate(t) {
+      if (!t || !Number.isFinite(Number(t))) return 'Zeit unbekannt';
+      return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(t));
+    }
+    function timeNow() { return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    function bytes(s) { return new TextEncoder().encode(String(s)).byteLength; }
+    function randId() {
+      const a = new Uint8Array(16);
+      if (!globalThis.crypto?.getRandomValues) throw new Error('Für sichere Session-IDs wird HTTPS oder localhost benötigt.');
+      crypto.getRandomValues(a);
+      return 'sb-' + Array.from(a, b => b.toString(16).padStart(2,'0')).join('');
+    }
+    function txId() {
+      const a = new Uint8Array(8); crypto.getRandomValues(a);
+      return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
+    }
+    function loadJson(key,fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+    }
+    function persistMeta() {
+      try { localStorage.setItem(META_KEY,JSON.stringify(state.metadata)); }
+      catch (e) { console.warn('Metadaten nicht speicherbar',e); }
+    }
+    function markTime(id,time=Date.now()) { state.pendingTimes.set(id, Number.isFinite(time)?time:null); }
+    function knownTimestamp(id,hash) {
+      if (state.pendingTimes.has(id)) {
+        const stamp = state.pendingTimes.get(id);
+        state.metadata[id]={mtime:stamp,hash};
+        state.pendingTimes.delete(id);
+        persistMeta();
+        return stamp;
+      }
+      const val=state.metadata[id];
+      return val && val.hash===hash ? val.mtime??null : null;
+    }
+    async function digest(s) {
+      if (globalThis.crypto?.subtle) {
+        const buffer=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+        return 'sha256:' + Array.from(new Uint8Array(buffer),v=>v.toString(16).padStart(2,'0')).join('');
+      }
+      let a=2166136261,b=2166136261^0x9e3779b9;
+      for(let i=0;i<s.length;i++){const n=s.charCodeAt(i);a=Math.imul(a^n,16777619);b=Math.imul(b^(n>>>8),16777619);}
+      return 'fnv:'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
+    }
+    function addActivity(msg) {
+      state.activity.unshift({msg:String(msg),time:timeNow()});
+      state.activity=state.activity.slice(0,5);
+      $('activityList').innerHTML=state.activity.map(x=>`<li><span>${esc(x.msg)}</span><span class="time">${esc(x.time)}</span></li>`).join('');
+    }
+    function toast(msg,error=false) {
+      const el=document.createElement('div');
+      el.className='toast'+(error?' error':'');
+      el.innerHTML=`${icon(error?'info':'check')}<span>${esc(msg)}</span>`;
+      $('toastArea').append(el);
+      setTimeout(()=>el.remove(),5200);
+    }
+    function setStatus(text,type='') {
+      $('statusText').textContent=text;
+      $('statusDot').className='dot '+type;
+      $('roleStat').textContent=state.isConnected?'Online':(state.role==='host'?'Host':(state.role==='guest'?'Gast':'Offline'));
+      $('roleNote').textContent=state.isConnected?'Direkt verbunden':(state.role==='idle'?'Noch keine Sitzung':'Verbindung ausstehend');
+    }
+    function toggleElement(id,show) { $(id).hidden=!show; }
+    function canControl() { return state.role==='host' && state.isConnected && !state.transfer; }
+    function updateConnectionUI() {
+      toggleElement('hostStartBox',state.role==='idle');
+      toggleElement('inviteBox',state.role==='host' && state.peerReady);
+      toggleElement('hostWaiting',state.role==='host');
+      $('hostWaitingText').textContent=state.isConnected?'Gegenstelle verbunden · Du steuerst den Transfer':state.peerReady?'Warte auf zweites Gerät …':'Sitzung wird vorbereitet …';
+      toggleElement('guestMessage',state.role==='guest');
+      $('guestMessageText').textContent=state.isConnected?'Verbunden · Der Host wählt die Daten aus':'Verbindung zum Host wird aufgebaut …';
+      toggleElement('disconnectRow',state.role!=='idle');
+      $('joinInput').disabled=state.role!=='idle';
+      $('joinBtn').disabled=state.role!=='idle';
+      $('createHostBtn').disabled=state.role!=='idle';
+      $('remoteDeviceLabel').textContent=state.isConnected?'Verbundenes Gerät':'Noch nicht verbunden';
+      $('thisDeviceLabel').textContent=state.role==='host'?'Host · dieser Browser':state.role==='guest'?'Gast · dieser Browser':'Lokal';
+    }
+    function drawQR(url) {
+      const holder=$('qrBox'); holder.replaceChildren();
+      try {
+        if (!window.LocalLinkQRCore) throw new Error('QR-Bibliothek nicht geladen');
+        const model=new window.LocalLinkQRCore(0,0); // Error correction level M.
+        const utf8=new TextEncoder().encode(url);
+        let raw='';for(const byte of utf8)raw+=String.fromCharCode(byte);
+        model.addData(raw);model.make();
+        const count=model.getModuleCount(), quiet=4, dimension=count+quiet*2;
+        const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+        svg.setAttribute('viewBox',`0 0 ${dimension} ${dimension}`);
+        svg.setAttribute('width','106');svg.setAttribute('height','106');
+        svg.setAttribute('aria-label','QR-Code des Einladungslinks');svg.setAttribute('role','img');
+        const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        bg.setAttribute('width',dimension);bg.setAttribute('height',dimension);bg.setAttribute('fill','#ffffff');svg.append(bg);
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        let d='';
+        for(let row=0;row<count;row++)for(let col=0;col<count;col++)if(model.isDark(row,col))d+=`M${col+quiet} ${row+quiet}h1v1h-1z`;
+        path.setAttribute('d',d);path.setAttribute('fill','#101a21');svg.append(path);
+        holder.append(svg);
+      } catch(e) {
+        const msg=document.createElement('span');msg.className='qr-placeholder';msg.textContent='QR-Code nicht verfügbar. Link kopieren.';holder.append(msg);
+        console.warn('QR-Code',e);
+      }
+    }
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+        else {
+          const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';
+          document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();if(!ok)throw new Error('Kopieren nicht unterstützt');
+        }
+        toast('In die Zwischenablage kopiert.');
+      } catch(e) {toast('Kopieren fehlgeschlagen: '+e.message,true);}
+    }
+    function inviteUrl(id) {
+      const url=new URL(window.location.href);
+      url.searchParams.set('session',id);
+      url.hash='';
+      return url.href;
+    }
+    function showInvite(id) {
+      const url=inviteUrl(id);
+      $('sessionIdText').textContent=id;
+      $('inviteUrlText').textContent=url;
+      $('inviteUrlText').title=url;
+      drawQR(url);
+    }
+    function sessionFromInput(s) {
+      s=String(s).trim();
+      if (/^sb-[0-9a-f]{32}$/i.test(s)) return s.toLowerCase();
+      try {
+        const u=new URL(s);
+        const id=u.searchParams.get('session');
+        if (/^sb-[0-9a-f]{32}$/i.test(id||'')) return id.toLowerCase();
+      } catch {}
+      return null;
+    }
+    function requirePeer() {
+      if(typeof window.Peer!=='function') {
+        toast('PeerJS wurde nicht geladen. Prüfe Internetverbindung oder CDN-Zugriff.',true);
+        return false;
+      }
+      return true;
+    }
+    function attachPeerErrors(peer) {
+      peer.on('error',e=>{
+        console.error('PeerJS',e);
+        const detail=e?.type||e?.message||'Unbekannter Fehler';
+        toast('PeerJS: '+detail,true);
+        addActivity('PeerJS-Fehler: '+detail);
+        if(!state.isConnected && ['unavailable-id','peer-unavailable','invalid-id','network','server-error'].includes(e?.type)) resetSession(false);
+      });
+      peer.on('disconnected',()=>{
+        if(!state.isConnected && state.role!=='idle')setStatus('Signalserver getrennt','error');
+      });
+    }
+    function startHost() {
+      if(state.role!=='idle'||!requirePeer())return;
+      try {
+        const id=randId();
+        state.role='host';state.session=id;state.peerReady=false;
+        state.peer=new window.Peer(id,{debug:0});
+        attachPeerErrors(state.peer);
+        state.peer.on('open',peerId=>{
+          if(state.role!=='host')return;
+          state.peerReady=true;state.session=peerId;
+          showInvite(peerId);updateConnectionUI();setStatus('Warte auf Gast','waiting');
+          addActivity('Host-Sitzung erstellt');
+        });
+        state.peer.on('connection',conn=>{
+          if(state.role!=='host'||(state.conn&&state.conn.open)){conn.close();return;}
+          bindConnection(conn);
+        });
+        updateConnectionUI();setStatus('Sitzung startet','waiting');
+      }catch(e){resetSession(false);toast(e.message,true);}
+    }
+    function startGuest(session) {
+      if(state.role!=='idle'||!requirePeer())return;
+      if(!/^sb-[0-9a-f]{32}$/i.test(session||'')){toast('Ungültige Session-ID.',true);return;}
+      try {
+        state.role='guest';state.session=session;
+        state.peer=new window.Peer({debug:0});
+        attachPeerErrors(state.peer);
+        state.peer.on('open',()=>{
+          if(state.role!=='guest')return;
+          try {
+            const conn=state.peer.connect(session,{reliable:true,serialization:'json',metadata:{app:'locallink',version:1}});
+            bindConnection(conn);
+          }catch(e){toast('Verbindung fehlgeschlagen: '+e.message,true);resetSession(false);}
+        });
+        updateConnectionUI();setStatus('Verbinde …','waiting');
+        addActivity('Verbindung zum Host wird aufgebaut');
+      }catch(e){resetSession(false);toast(e.message,true);}
+    }
+    function bindConnection(conn) {
+      if(state.conn && state.conn!==conn){try{state.conn.close();}catch{}}
+      state.conn=conn;
+      conn.on('open',async()=>{
+        if(state.conn!==conn)return;
+        state.isConnected=true;
+        state.remote=[];
+        setStatus('Verbunden','online');updateConnectionUI();renderTable();
+        addActivity(state.role==='host'?'Gast verbunden':'Mit Host verbunden');
+        toast('Verbindung hergestellt. Speicherstände werden abgeglichen.');
+        send({type:'hello',version:1});
+        await refreshLocal();
+      });
+      conn.on('data',msg=>{handleMessage(msg).catch(e=>{console.error(e);toast('Protokollfehler: '+e.message,true);});});
+      conn.on('close',()=>{
+        if(state.conn!==conn)return;
+        state.conn=null;state.isConnected=false;state.remote=[];state.incoming=null;state.outgoing=null;clearTransfer();
+        setStatus(state.role==='host'?'Warte auf Gast':'Getrennt',state.role==='host'?'waiting':'error');
+        updateConnectionUI();renderTable();addActivity('Gegenstelle getrennt');
+      });
+      conn.on('error',e=>{toast('Verbindungsfehler: '+(e?.message||e),true);});
+    }
+    function send(msg) {
+      if(!state.conn?.open)throw new Error('Keine aktive Verbindung.');
+      state.conn.send(msg);
+    }
+    function resetSession(showToast=true) {
+      const conn=state.conn,peer=state.peer;
+      state.conn=null;state.peer=null;
+      state.isConnected=false;state.peerReady=false;state.role='idle';state.session='';state.remote=[];
+      state.incoming=null;state.outgoing=null;state.pendingPullId=null;
+      clearTransfer();
+      try{conn?.close();}catch{}
+      try{peer?.destroy();}catch{}
+      const url=new URL(location.href);
+      if(url.searchParams.has('session')){url.searchParams.delete('session');history.replaceState(null,'',url.href);}
+      $('joinInput').value='';
+      updateConnectionUI();setStatus('Nicht verbunden');renderTable();
+      if(showToast){toast('Sitzung beendet.');addActivity('Sitzung beendet');}
+    }
+
+    function encodeB64(buffer) {
+      const u=buffer instanceof Uint8Array?buffer:new Uint8Array(buffer);
+      const parts=[];
+      for(let i=0;i<u.length;i+=8192)parts.push(String.fromCharCode(...u.subarray(i,i+8192)));
+      return btoa(parts.join(''));
+    }
+    function decodeB64(str) {
+      const s=atob(str),a=new Uint8Array(s.length);
+      for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);
+      return a;
+    }
+    async function encodeValue(v,stack=new WeakSet(),depth=0) {
+      if(depth>100)throw new Error('Objekt-Verschachtelung zu tief.');
+      if(v===null)return ['null'];
+      if(v===undefined)return ['undefined'];
+      if(typeof v==='string')return ['string',v];
+      if(typeof v==='boolean')return ['boolean',v];
+      if(typeof v==='number')return Number.isFinite(v)?['number',v]:['nonfinite',String(v)];
+      if(typeof v==='bigint')return ['bigint',v.toString()];
+      if(typeof v!=='object')throw new Error('Nicht unterstützter Wert: '+typeof v);
+      if(stack.has(v))throw new Error('Zyklische Referenz kann nicht übertragen werden.');
+      if(v instanceof Date)return ['date',Number.isFinite(v.getTime())?v.getTime():null];
+      if(v instanceof RegExp)return ['regexp',v.source,v.flags];
+      if(typeof File!=='undefined'&&v instanceof File)return ['file',v.name,v.type,v.lastModified,encodeB64(await v.arrayBuffer())];
+      if(v instanceof Blob)return ['blob',v.type,encodeB64(await v.arrayBuffer())];
+      if(v instanceof ArrayBuffer)return ['buffer',encodeB64(v)];
+      if(ArrayBuffer.isView(v))return ['view',v.constructor.name,encodeB64(new Uint8Array(v.buffer,v.byteOffset,v.byteLength))];
+      stack.add(v);
+      try {
+        if(Array.isArray(v)){
+          const out=[];for(const x of v)out.push(await encodeValue(x,stack,depth+1));return ['array',out];
+        }
+        if(v instanceof Map){const out=[];for(const [key,val] of v)out.push([await encodeValue(key,stack,depth+1),await encodeValue(val,stack,depth+1)]);return ['map',out];}
+        if(v instanceof Set){const out=[];for(const val of v)out.push(await encodeValue(val,stack,depth+1));return ['set',out];}
+        const proto=Object.getPrototypeOf(v);
+        if(proto===Object.prototype||proto===null){
+          const out=[];for(const key of Object.keys(v))out.push([key,await encodeValue(v[key],stack,depth+1)]);
+          return ['object',out];
+        }
+        throw new Error('Nicht unterstützter Objekttyp: '+(v.constructor?.name||'Unbekannt'));
+      } finally {stack.delete(v);}
+    }
+    function decodeValue(v) {
+      if(!Array.isArray(v))throw new Error('Ungültiges Werteformat.');
+      switch(v[0]){
+        case 'null':return null;
+        case 'undefined':return undefined;
+        case 'string':case 'boolean':case 'number':return v[1];
+        case 'nonfinite':return Number(v[1]);
+        case 'bigint':return BigInt(v[1]);
+        case 'date':return new Date(v[1]===null?NaN:v[1]);
+        case 'regexp':return new RegExp(v[1],v[2]);
+        case 'array':return v[1].map(decodeValue);
+        case 'object':{
+          const obj={};for(const [key,val] of v[1])Object.defineProperty(obj,key,{value:decodeValue(val),writable:true,configurable:true,enumerable:true});return obj;
+        }
+        case 'map':return new Map(v[1].map(([k,val])=>[decodeValue(k),decodeValue(val)]));
+        case 'set':return new Set(v[1].map(decodeValue));
+        case 'buffer':return decodeB64(v[1]).buffer;
+        case 'blob':return new Blob([decodeB64(v[2])],{type:v[1]});
+        case 'file':return new File([decodeB64(v[4])],v[1],{type:v[2],lastModified:v[3]});
+        case 'view':{
+          const bytes=decodeB64(v[2]);
+          if(v[1]==='DataView')return new DataView(bytes.buffer);
+          const ctors={Int8Array,Uint8Array,Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,Uint32Array,Float32Array,Float64Array};
+          if(typeof BigInt64Array!=='undefined')ctors.BigInt64Array=BigInt64Array;
+          if(typeof BigUint64Array!=='undefined')ctors.BigUint64Array=BigUint64Array;
+          const Constructor=ctors[v[1]];
+          if(!Constructor)throw new Error('Unbekannter TypedArray-Typ: '+v[1]);
+          return new Constructor(bytes.buffer);
+        }
+        default:throw new Error('Unbekannter Datentyp: '+v[0]);
+      }
+    }
+    function openDB(name,version,upgrade) {
+      return new Promise((resolve,reject)=>{
+        let req;try{req=version===undefined?indexedDB.open(name):indexedDB.open(name,version);}catch(e){reject(e);return;}
+        let timer=setTimeout(()=>{try{req?.result?.close();}catch{}reject(new Error('Datenbank-Öffnen dauert zu lange. Andere Tabs schließen.'));},13000);
+        req.onupgradeneeded=e=>{
+          try {if(upgrade)upgrade(req.result,e.oldVersion,req.transaction);}catch(err){try{req.transaction.abort();}catch{}reject(err);}
+        };
+        req.onsuccess=()=>{clearTimeout(timer);resolve(req.result);};
+        req.onerror=()=>{clearTimeout(timer);reject(req.error||new Error('IndexedDB konnte nicht geöffnet werden.'));};
+        req.onblocked=()=>{clearTimeout(timer);reject(new Error('IndexedDB ist durch einen anderen Tab blockiert.'));};
+      });
+    }
+    function txDone(tx) {
+      return new Promise((resolve,reject)=>{
+        tx.oncomplete=()=>resolve();
+        tx.onabort=()=>reject(tx.error||new Error('Datenbanktransaktion abgebrochen.'));
+        tx.onerror=()=>reject(tx.error||new Error('Datenbanktransaktion fehlgeschlagen.'));
+      });
+    }
+    function listRecords(db,name) {
+      return new Promise((resolve,reject)=>{
+        const data=[];let ended=false;
+        let tx;try{tx=db.transaction(name,'readonly');}catch(e){reject(e);return;}
+        const req=tx.objectStore(name).openCursor();
+        req.onsuccess=()=>{
+          if(ended)return;
+          const cursor=req.result;
+          if(!cursor)return;
+          if(data.length>=MAX_RECORDS){ended=true;try{tx.abort();}catch{}reject(new Error('Mehr als '+MAX_RECORDS+' Datensätze; Sicherheitslimit.'));return;}
+          data.push({key:cursor.primaryKey,value:cursor.value});cursor.continue();
+        };
+        tx.oncomplete=()=>{if(!ended)resolve(data);};
+        tx.onerror=()=>{if(!ended){ended=true;reject(tx.error||new Error('Lesefehler'));}};
+        tx.onabort=()=>{if(!ended){ended=true;reject(tx.error||new Error('Abbruch beim Lesen'));}};
+      });
+    }
+    async function exportDatabase(name) {
+      const db=await openDB(name);
+      db.onversionchange=()=>db.close();
+      try {
+        const result={kind:'db',name,version:db.version,stores:[]};
+        for(const storeName of Array.from(db.objectStoreNames)) {
+          const tx=db.transaction(storeName,'readonly');
+          const store=tx.objectStore(storeName);
+          const indexes=Array.from(store.indexNames).map(idxName=>{
+            const idx=store.index(idxName);
+            return {name:idx.name,keyPath:idx.keyPath,unique:idx.unique,multiEntry:idx.multiEntry};
+          });
+          const spec={name:store.name,keyPath:store.keyPath,autoIncrement:store.autoIncrement,indexes,records:[]};
+          const rows=await listRecords(db,storeName);
+          for(const row of rows){
+            spec.records.push([await encodeValue(row.key),await encodeValue(row.value)]);
+          }
+          result.stores.push(spec);
+        }
+        return result;
+      } finally {db.close();}
+    }
+    function deleteDB(name) {
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.deleteDatabase(name);
+        const timer=setTimeout(()=>reject(new Error('Datenbanklöschung blockiert. Andere Tabs mit dieser Website schließen.')),13000);
+        req.onsuccess=()=>{clearTimeout(timer);resolve();};
+        req.onerror=()=>{clearTimeout(timer);reject(req.error||new Error('Löschen fehlgeschlagen.'));};
+        req.onblocked=()=>{clearTimeout(timer);reject(new Error('Datenbank ist in einem anderen Tab geöffnet.'));};
+      });
+    }
+    async function importDatabase(data) {
+      if(!data || data.kind!=='db' || typeof data.name!=='string' || !Number.isInteger(data.version) || data.version<1 || !Array.isArray(data.stores))throw new Error('Ungültiger IndexedDB-Snapshot.');
+      if(data.name.startsWith(INTERNAL))throw new Error('Interner Datenbankname ist nicht zulässig.');
+      // Decode and validate everything before deleting the destination database.
+      const prepared=[];
+      for(const s of data.stores){
+        if(!s||typeof s.name!=='string'||!Array.isArray(s.records)||!Array.isArray(s.indexes))throw new Error('Ungültige Objektstore-Daten.');
+        if(s.records.length>MAX_RECORDS)throw new Error('Zu viele Datensätze.');
+        const entries=s.records.map(([key,value])=>[decodeValue(key),decodeValue(value)]);
+        prepared.push({schema:s,entries});
+      }
+      await deleteDB(data.name);
+      const db=await openDB(data.name,data.version,opened=>{
+        for(const item of prepared){
+          const s=item.schema;
+          const args={autoIncrement:!!s.autoIncrement};
+          if(s.keyPath!==null && s.keyPath!==undefined)args.keyPath=s.keyPath;
+          const store=opened.createObjectStore(s.name,args);
+          for(const idx of s.indexes)store.createIndex(idx.name,idx.keyPath,{unique:!!idx.unique,multiEntry:!!idx.multiEntry});
+        }
+      });
+      db.onversionchange=()=>db.close();
+      try {
+        if(prepared.length) {
+          const tx=db.transaction(prepared.map(s=>s.schema.name),'readwrite');
+          const finished=txDone(tx);
+          for(const {schema,entries} of prepared){
+            const store=tx.objectStore(schema.name);
+            for(const [key,value] of entries){
+              if(schema.keyPath===null||schema.keyPath===undefined)store.put(value,key);
+              else store.put(value);
+            }
+          }
+          await finished;
+        }
+      }finally{db.close();}
+      registerDB(data.name);
+    }
+    function registerDB(name) {
+      const names=new Set(loadJson(DB_REGISTRY_KEY,[]));names.add(name);
+      localStorage.setItem(DB_REGISTRY_KEY,JSON.stringify([...names]));
+    }
+    async function databaseNames() {
+      const names=new Set(loadJson(DB_REGISTRY_KEY,[]).filter(x=>typeof x==='string'));
+      if(typeof indexedDB.databases==='function'){
+        try{
+          const found=await indexedDB.databases();
+          const existing=new Set(found.map(d=>d.name).filter(Boolean));
+          for(const name of [...names])if(!existing.has(name))names.delete(name);
+          for(const name of existing)names.add(name);
+        }catch(e){console.warn('Datenbank-Auflistung nicht unterstützt',e);}
+      }
+      return [...names].sort((a,b)=>a.localeCompare(b,'de'));
+    }
+    async function buildManifest() {
+      const items=[],cache=new Map();
+      const lsKeys=[];
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(key&&!key.startsWith(INTERNAL))lsKeys.push(key);
+      }
+      lsKeys.sort((a,b)=>a.localeCompare(b,'de'));
+      for(const name of lsKeys){
+        const value=localStorage.getItem(name);
+        if(value===null)continue;
+        const id='ls:'+name;
+        const h=await digest(value);
+        const item={id,kind:'ls',name,bytes:bytes(name)+bytes(value),count:1,mtime:knownTimestamp(id,h),hash:h};
+        items.push(item);cache.set(id,{text:JSON.stringify({kind:'ls',name,value}),item});
+      }
+      if(!globalThis.indexedDB)return {items,cache};
+      for(const name of await databaseNames()){
+        const id='db:'+name;
+        try {
+          const snapshot=await exportDatabase(name);
+          const text=JSON.stringify(snapshot);
+          if(text.length>MAX_CHARS)throw new Error('Datenbank über 20 Mio. Zeichen (Transferlimit).');
+          const h=await digest(text);
+          const item={id,kind:'db',name,bytes:bytes(text),count:snapshot.stores.reduce((n,s)=>n+s.records.length,0),storeCount:snapshot.stores.length,version:snapshot.version,mtime:knownTimestamp(id,h),hash:h};
+          items.push(item);cache.set(id,{text,item});
+        }catch(e){
+          items.push({id,kind:'db',name,error:e.message||String(e),bytes:null,count:null,mtime:null,hash:null});
+          console.warn('IndexedDB nicht lesbar:',name,e);
+        }
+      }
+      return {items,cache};
+    }
+    async function refreshLocal() {
+      if(state.scanning){state.rescan=true;return;}
+      state.scanning=true;
+      $('refreshBtn').disabled=true;
+      try {
+        const result=await buildManifest();
+        state.local=result.items;state.cache=result.cache;
+        renderTable();
+        if(state.isConnected)send({type:'manifest',items:state.local});
+      }catch(e){console.error(e);toast('Speicher konnte nicht eingelesen werden: '+e.message,true);}
+      finally{
+        state.scanning=false;$('refreshBtn').disabled=false;
+        if(state.rescan){state.rescan=false;void refreshLocal();}
+      }
+    }
+    function scheduleRefresh() {if(!state.scanning)void refreshLocal();else state.rescan=true;}
+    function manifestItem(m) {
+      if(!m||typeof m!=='object'||typeof m.id!=='string'||typeof m.name!=='string'||!['ls','db'].includes(m.kind)||m.id!==m.kind+':'+m.name||m.name.length>512)return false;
+      return true;
+    }
+    function diffInfo(a,b) {
+      if(!a&&!b)return {different:false,pills:[]};
+      if(!a)return {different:true,pills:[['remote-newer','Nur dort']]};
+      if(!b)return {different:true,pills:[['newer','Nur hier']]};
+      if(a.error||b.error)return {different:true,pills:[['unknown','Nicht lesbar']]};
+      if(a.hash&&b.hash&&a.hash===b.hash)return {different:false,pills:[['equal','Identisch']]};
+      const out=[];
+      if(a.mtime!=null&&b.mtime!=null&&a.mtime!==b.mtime){
+        out.push(a.mtime>b.mtime?['newer','Hier neuer']:['remote-newer','Dort neuer']);
+      }else out.push(['unknown','Zeit unklar']);
+      if(a.bytes!=null&&b.bytes!=null&&a.bytes!==b.bytes)out.push(['bigger',a.bytes>b.bytes?'Hier größer':'Dort größer']);
+      else if(a.bytes===b.bytes)out.push(['bigger','Gleich groß']);
+      return {different:true,pills:out};
+    }
+    function rowSide(item,waiting=false) {
+      if(!item)return `<span class="missing">${waiting?'Nicht verbunden':'Nicht vorhanden'}</span>`;
+      if(item.error)return `<span class="size-value" style="color:var(--danger)">Nicht lesbar</span><span class="secondary-line" title="${esc(item.error)}">${esc(item.error)}</span>`;
+      const count=item.kind==='db'?`${Number(item.count)||0} Datensätze · ${Number(item.storeCount)||0} Stores`:formatDate(item.mtime);
+      return `<span class="size-value">${formatBytes(item.bytes)}</span><span class="secondary-line" title="${esc(formatDate(item.mtime))}">${esc(count)}</span>${item.kind==='db'?`<span class="secondary-line">${esc(formatDate(item.mtime))}</span>`:''}`;
+    }
+    function renderTable() {
+      const l=new Map(state.local.map(x=>[x.id,x]));
+      const r=new Map(state.remote.map(x=>[x.id,x]));
+      const ids=[...new Set([...l.keys(),...r.keys()])].sort((a,b)=>{
+        const aa=(l.get(a)||r.get(a)),bb=(l.get(b)||r.get(b));
+        return aa.kind===bb.kind?aa.name.localeCompare(bb.name,'de'):(aa.kind==='ls'?-1:1);
+      });
+      const diffs=ids.filter(id=>diffInfo(l.get(id),r.get(id)).different).length;
+      $('localStat').textContent=state.local.length;
+      $('remoteStat').textContent=state.isConnected?state.remote.length:'–';
+      $('diffStat').textContent=state.isConnected?diffs:'–';
+      $('allFilterCount').textContent=' '+ids.length;
+      const all=ids.filter(id=>{
+        const item=l.get(id)||r.get(id);
+        if(state.filter==='ls'&&item.kind!=='ls')return false;
+        if(state.filter==='db'&&item.kind!=='db')return false;
+        if(state.filter==='diff'&&!diffInfo(l.get(id),r.get(id)).different)return false;
+        if(state.search&&!item.name.toLowerCase().includes(state.search))return false;
+        return true;
+      });
+      const rows=all.map(id=>{
+        const a=l.get(id),b=r.get(id),item=a||b;
+        const info=state.isConnected?diffInfo(a,b):{pills:[['unknown','Nicht verbunden']]};
+        const pills=info.pills.map(([type,label])=>`<span class="pill ${type}">${esc(label)}</span>`).join('');
+        const disabledPush=!(canControl()&&a&&!a.error);
+        const disabledPull=!(canControl()&&b&&!b.error);
+        const detail=item.kind==='db'?`IndexedDB · ${Number(item.storeCount)||0} Object Stores · v${Number(item.version)||'?'}`:'localStorage · Schlüssel';
+        return `<tr>
+          <td><div class="entry"><div class="entry-icon ${item.kind==='db'?'db':''}">${icon(item.kind==='db'?'database':'storage')}</div><div><div class="entry-name" title="${esc(item.name)}">${esc(item.name)}</div><div class="entry-detail">${esc(detail)}</div></div></div></td>
+          <td>${rowSide(a)}</td><td>${rowSide(b,!state.isConnected)}</td>
+          <td><div class="compare-pills">${pills}</div></td>
+          <td><div class="row-actions"><button class="act-btn send" data-action="send" data-id="${esc(id)}" ${disabledPush?'disabled':''} title="An Gegenstelle senden" aria-label="${esc(item.name)} an Gegenstelle senden">${icon('up')}</button><button class="act-btn pull" data-action="pull" data-id="${esc(id)}" ${disabledPull?'disabled':''} title="Von Gegenstelle holen" aria-label="${esc(item.name)} von Gegenstelle holen">${icon('down')}</button></div></td>
+        </tr>`;
+      });
+      if(rows.length){$('tableBody').innerHTML=rows.join('');}
+      else{
+        const title=state.search?'Keine Treffer':state.filter==='diff'?'Keine Unterschiede':'Noch keine Speichereinträge';
+        const detail=state.search?'Versuche einen anderen Suchbegriff.':state.filter==='diff'?'Beide Geräte haben für die erfassten Einträge denselben Stand.':'Über die Testdaten lassen sich sofort Beispiele erzeugen.';
+        $('tableBody').innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">${icon('database')}</div><div class="empty-title">${title}</div><p>${detail}</p></div></td></tr>`;
+      }
+      $('tableFootCount').textContent=`${all.length} von ${ids.length} Einträgen angezeigt`;
+    }
+    function startTransfer(label,tx,mode) {
+      state.transfer={label,tx,mode};
+      $('transferTitle').textContent=label;
+      $('transferPanel').hidden=false;
+      setProgress(0,'Daten werden vorbereitet …');renderTable();
+    }
+    function setProgress(progress,detail) {
+      $('transferPercent').textContent=Math.min(100,Math.max(0,Math.round(progress*100)))+' %';
+      $('progressBar').style.width=Math.min(100,Math.max(0,progress*100))+'%';
+      if(detail)$('transferDesc').textContent=detail;
+    }
+    function clearTransfer() {
+      state.transfer=null;state.incoming=null;state.outgoing=null;state.pendingPullId=null;
+      $('transferPanel').hidden=true;renderTable();
+    }
+    function stopTransfer(ok,msg,tx) {
+      if(state.transfer&&state.transfer.tx!==tx)return;
+      if(msg){addActivity(msg);toast(msg,!ok);}
+      clearTransfer();
+      scheduleRefresh();
+    }
+    async function snapshotFromId(id) {
+      const kind=id.slice(0,3)==='ls:'?'ls':id.slice(0,3)==='db:'?'db':null;
+      if(!kind)throw new Error('Unbekannte Speicherart.');
+      const name=id.slice(3);
+      let data,hash;
+      if(kind==='ls'){
+        if(name.startsWith(INTERNAL))throw new Error('Interne Schlüssel sind geschützt.');
+        const value=localStorage.getItem(name);
+        if(value===null)throw new Error('Schlüssel nicht mehr vorhanden.');
+        data={kind:'ls',name,value};hash=await digest(value);
+      }else{
+        data=await exportDatabase(name);
+        hash=await digest(JSON.stringify(data));
+      }
+      const content=JSON.stringify(data);
+      if(content.length>MAX_CHARS)throw new Error('Eintrag ist größer als das Transferlimit (20 Mio. Zeichen).');
+      const mtime=state.metadata[id]?.hash===hash?state.metadata[id].mtime??null:null;
+      return {content,mtime};
+    }
+    async function sendSnapshot(id,tx) {
+      try{
+        const {content,mtime}=await snapshotFromId(id);
+        if(!state.transfer||state.transfer.tx!==tx)return;
+        const hash=await digest(content);
+        const total=Math.ceil(content.length/CHUNK);
+        state.outgoing={tx,id,text:content,total,cursor:0,hash};
+        send({type:'transfer-start',tx,id,length:content.length,total,hash,mtime});
+        setProgress(0,'Warte auf Empfangsbereitschaft …');
+      }catch(e){
+        try{send({type:'transfer-result',tx,ok:false,error:e.message});}catch{}
+        stopTransfer(false,'Übertragung fehlgeschlagen: '+e.message,tx);
+      }
+    }
+    async function beginAction(id,direction) {
+      if(!canControl())return;
+      const local=state.local.find(x=>x.id===id);
+      const remote=state.remote.find(x=>x.id===id);
+      if(direction==='send'&&!local)return;
+      if(direction==='pull'&&!remote)return;
+      const target=direction==='send'?remote:local;
+      const source=direction==='send'?local:remote;
+      if(source.error)return toast('Quelle konnte nicht gelesen werden.',true);
+      const kind=source.kind==='db'?'Datenbank':'localStorage-Eintrag';
+      let text;
+      if(target){
+        text=source.kind==='db'?`Die Datenbank „${source.name}“ auf ${direction==='send'?'der Gegenseite':'diesem Gerät'} wird vollständig gelöscht und mit dem Quellstand neu angelegt. Fortfahren?`:`Der localStorage-Eintrag „${source.name}“ auf ${direction==='send'?'der Gegenseite':'diesem Gerät'} wird überschrieben. Fortfahren?`;
+        if(!confirm(text))return;
+      }
+      const tx=txId();
+      if(direction==='send'){
+        startTransfer(`Senden: ${source.name}`,tx,'send');
+        addActivity(`${kind} zum Senden ausgewählt`);
+        await sendSnapshot(id,tx);
+      }else{
+        startTransfer(`Empfangen: ${source.name}`,tx,'pull');
+        state.pendingPullId=id;
+        addActivity(`${kind} angefordert`);
+        try{send({type:'request-upload',tx,id});setProgress(0,'Warte auf Daten von der Gegenstelle …');}
+        catch(e){stopTransfer(false,e.message,tx);}
+      }
+    }
+    function chunkNext(msg) {
+      const out=state.outgoing;
+      if(!out||out.tx!==msg.tx)return;
+      if(!Number.isInteger(msg.next)||msg.next<0||msg.next>out.total)return;
+      if(msg.next!==out.cursor)return;
+      setProgress(out.total?msg.next/out.total:1,msg.next===out.total?'Daten werden auf der Gegenseite gespeichert …':'Datenpakete werden übertragen …');
+      if(msg.next===out.total)return;
+      const end=Math.min(out.total,msg.next+WINDOW);
+      for(let i=msg.next;i<end;i++){
+        send({type:'transfer-chunk',tx:out.tx,index:i,data:out.text.slice(i*CHUNK,(i+1)*CHUNK)});
+      }
+      out.cursor=end;
+    }
+    async function receiveStart(msg) {
+      if(typeof msg.tx!=='string'||typeof msg.id!=='string'||!Number.isInteger(msg.total)||msg.total<1||msg.total>Math.ceil(MAX_CHARS/CHUNK)||!Number.isInteger(msg.length)||msg.length>MAX_CHARS||msg.length<1||typeof msg.hash!=='string')return;
+      if(state.incoming){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Empfänger ist beschäftigt.'});return;}
+      if(state.role==='host' && (!state.transfer||state.transfer.mode!=='pull'||state.transfer.tx!==msg.tx||state.pendingPullId!==msg.id))return;
+      if(state.role==='guest'){
+        if(state.transfer){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Empfänger ist beschäftigt.'});return;}
+        startTransfer(`Empfangen: ${msg.id.slice(3)}`,msg.tx,'receive');
+      }
+      state.incoming={tx:msg.tx,id:msg.id,total:msg.total,length:msg.length,hash:msg.hash,mtime:Number.isFinite(msg.mtime)?msg.mtime:null,parts:[],next:0};
+      send({type:'transfer-ack',tx:msg.tx,next:0});
+      setProgress(0,'Daten werden empfangen …');
+    }
+    async function receiveChunk(msg) {
+      const incoming=state.incoming;
+      if(!incoming||incoming.tx!==msg.tx)return;
+      if(!Number.isInteger(msg.index)||msg.index!==incoming.next||typeof msg.data!=='string'||msg.data.length>CHUNK){
+        send({type:'transfer-result',tx:incoming.tx,ok:false,error:'Fehlerhafte Paket-Reihenfolge.'});
+        stopTransfer(false,'Paket-Reihenfolge fehlerhaft.',incoming.tx);return;
+      }
+      incoming.parts.push(msg.data);incoming.next++;
+      setProgress(incoming.next/incoming.total,'Datenpakete werden empfangen …');
+      if(incoming.next%WINDOW===0||incoming.next===incoming.total)send({type:'transfer-ack',tx:incoming.tx,next:incoming.next});
+      if(incoming.next===incoming.total){
+        state.incoming=null;
+        let err=null;
+        try{
+          const text=incoming.parts.join('');
+          if(text.length!==incoming.length)throw new Error('Unvollständiger Datentransfer.');
+          if(await digest(text)!==incoming.hash)throw new Error('Prüfsumme stimmt nicht überein.');
+          setProgress(1,'Daten werden in den lokalen Speicher geschrieben …');
+          const snapshot=JSON.parse(text);
+          if(snapshot.kind+':'+snapshot.name!==incoming.id)throw new Error('Quellidentität stimmt nicht überein.');
+          if(snapshot.kind==='ls'){
+            if(typeof snapshot.value!=='string'||snapshot.name.startsWith(INTERNAL))throw new Error('Ungültiger localStorage-Schlüssel.');
+            localStorage.setItem(snapshot.name,snapshot.value);
+          }else if(snapshot.kind==='db'){
+            await importDatabase(snapshot);
+          }else throw new Error('Unbekannter Snapshot-Typ.');
+          markTime(incoming.id,incoming.mtime);
+        }catch(e){err=e;console.error('Transfer konnte nicht importiert werden',e);}
+        try{send({type:'transfer-result',tx:incoming.tx,ok:!err,error:err?.message||null});}catch{}
+        stopTransfer(!err,err?`Import fehlgeschlagen: ${err.message}`:`Erfolgreich übernommen: ${incoming.id.slice(3)}`,incoming.tx);
+      }
+    }
+    async function handleMessage(msg) {
+      if(!msg||typeof msg!=='object'||typeof msg.type!=='string'||!state.isConnected)return;
+      switch(msg.type){
+        case 'hello':if(msg.version!==1)toast('Gegenstelle nutzt eine andere Protokollversion.',true);break;
+        case 'manifest':{
+          if(!Array.isArray(msg.items)||msg.items.length>MAX_MESSAGE_ITEMS)return;
+          state.remote=msg.items.filter(manifestItem).map(x=>({id:x.id,kind:x.kind,name:x.name,bytes:Number.isFinite(x.bytes)?x.bytes:null,count:Number.isFinite(x.count)?x.count:null,storeCount:x.storeCount,version:x.version,mtime:Number.isFinite(x.mtime)?x.mtime:null,hash:typeof x.hash==='string'?x.hash:null,error:typeof x.error==='string'?x.error.slice(0,200):null}));
+          renderTable();break;
+        }
+        case 'request-upload':{
+          if(state.role!=='guest'||typeof msg.tx!=='string'||typeof msg.id!=='string')return;
+          if(state.transfer){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Bereits eine Übertragung aktiv.'});return;}
+          if(!state.local.find(x=>x.id===msg.id&&!x.error)){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Angeforderter Eintrag ist nicht verfügbar.'});return;}
+          startTransfer(`Senden: ${msg.id.slice(3)}`,msg.tx,'send');
+          await sendSnapshot(msg.id,msg.tx);break;
+        }
+        case 'transfer-start':await receiveStart(msg);break;
+        case 'transfer-chunk':await receiveChunk(msg);break;
+        case 'transfer-ack':chunkNext(msg);break;
+        case 'transfer-result':{
+          if(!state.transfer||state.transfer.tx!==msg.tx)return;
+          if(msg.ok)stopTransfer(true,`Übertragung abgeschlossen: ${state.transfer.label.replace(/^(Senden|Empfangen): /,'')}`,msg.tx);
+          else stopTransfer(false,'Übertragung fehlgeschlagen: '+(msg.error||'Unbekannter Fehler'),msg.tx);
+          break;
+        }
+      }
+    }
+
+    async function createDemo() {
+      if(!localStorage.getItem(SEED_LS_KEY)){
+        const date=new Date().toISOString();
+        const values={
+          'demo:profil':JSON.stringify({name:'Testnutzer',device:'Browser',revision:1,updatedAt:date},null,2),
+          'demo:einstellungen':JSON.stringify({theme:'dark',language:'de',notifications:true},null,2),
+          'demo:letzterBesuch':date
+        };
+        for(const [k,v] of Object.entries(values)){localStorage.setItem(k,v);markTime('ls:'+k);}
+        localStorage.setItem(SEED_LS_KEY,'1');
+      }
+      registerDB(DEMO_DB);
+      if(!localStorage.getItem(SEED_DB_KEY)&&globalThis.indexedDB){
+        const db=await openDB(DEMO_DB,1,opened=>{
+          if(!opened.objectStoreNames.contains('notes')){
+            const store=opened.createObjectStore('notes',{keyPath:'id'});
+            store.createIndex('updatedAt','updatedAt');
+          }
+          if(!opened.objectStoreNames.contains('events')){
+            const store=opened.createObjectStore('events',{keyPath:'id',autoIncrement:true});
+            store.createIndex('createdAt','createdAt');
+          }
+        });
+        try{
+          if(db.objectStoreNames.contains('notes')&&db.objectStoreNames.contains('events')){
+            const tx=db.transaction(['notes','events'],'readwrite');const done=txDone(tx);
+            const now=new Date().toISOString();
+            tx.objectStore('notes').put({id:'welcome',title:'Willkommen bei LocalLink',text:'Diese kleine Datenbank wird nur für den Sync-Test angelegt.',updatedAt:now});
+            tx.objectStore('notes').put({id:'checklist',title:'Teste eine Änderung',text:'Klicke auf „Testdaten verändern“ und vergleiche beide Seiten.',updatedAt:now});
+            tx.objectStore('events').add({type:'demo-created',createdAt:now,source:'LocalLink'});
+            await done;
+          }
+        }finally{db.close();}
+        markTime('db:'+DEMO_DB);
+        localStorage.setItem(SEED_DB_KEY,'1');
+      }
+    }
+    async function modifyDemo() {
+      $('modifyDemoBtn').disabled=true;
+      try{
+        const key='demo:profil';
+        const prev=loadJson(key,{});
+        const version=(Number(prev.revision)||0)+1;
+        const now=new Date().toISOString();
+        localStorage.setItem(key,JSON.stringify({...prev,revision:version,updatedAt:now},null,2));
+        localStorage.setItem('demo:letzterBesuch',now);
+        markTime('ls:'+key);markTime('ls:demo:letzterBesuch');
+        const db=await openDB(DEMO_DB);
+        try{
+          const tx=db.transaction(['notes','events'],'readwrite');const done=txDone(tx);
+          tx.objectStore('notes').put({id:'welcome',title:'Willkommen bei LocalLink',text:'Zuletzt geändert: '+now+' (Revision '+version+')',updatedAt:now});
+          tx.objectStore('events').add({type:'demo-updated',revision:version,createdAt:now});
+          await done;
+        }finally{db.close();}
+        markTime('db:'+DEMO_DB);
+        addActivity('Testdaten auf diesem Gerät verändert');
+        toast('Testdaten aktualisiert (Revision '+version+').');
+        scheduleRefresh();
+      }catch(e){toast('Testdaten konnten nicht geändert werden: '+e.message,true);}
+      finally{$('modifyDemoBtn').disabled=false;}
+    }
+    async function addNamedDatabase() {
+      const name=prompt('Name einer IndexedDB auf diesem Origin eingeben:');
+      if(name===null)return;
+      if(!name.trim()||name.length>200||name.startsWith(INTERNAL))return toast('Ungültiger Datenbankname.',true);
+      try{
+        if(typeof indexedDB.databases==='function'){
+          const list=await indexedDB.databases();
+          if(!list.some(db=>db.name===name))return toast('Auf diesem Origin wurde keine Datenbank mit diesem Namen gefunden.',true);
+        }
+        registerDB(name);scheduleRefresh();toast('Datenbank in die Liste aufgenommen.');
+      }catch(e){toast('Datenbank konnte nicht registriert werden: '+e.message,true);}
+    }
+    async function boot() {
+      state.metadata=loadJson(META_KEY,{});
+      if(!state.metadata||typeof state.metadata!=='object'||Array.isArray(state.metadata))state.metadata={};
+      $('createHostBtn').addEventListener('click',startHost);
+      $('joinForm').addEventListener('submit',e=>{
+        e.preventDefault();const session=sessionFromInput($('joinInput').value);
+        if(session)startGuest(session);else toast('Bitte gültige Session-ID oder Einladungs-URL eingeben.',true);
+      });
+      $('disconnectBtn').addEventListener('click',()=>resetSession());
+      $('copyInviteBtn').addEventListener('click',()=>copyText(inviteUrl(state.session)));
+      $('copyIdBtn').addEventListener('click',()=>copyText(state.session));
+      $('refreshBtn').addEventListener('click',()=>{addActivity('Speicher wird neu eingelesen');scheduleRefresh();});
+      $('modifyDemoBtn').addEventListener('click',modifyDemo);
+      $('addDbBtn').addEventListener('click',addNamedDatabase);
+      $('searchInput').addEventListener('input',e=>{state.search=e.target.value.trim().toLowerCase();renderTable();});
+      $('filters').addEventListener('click',e=>{
+        const btn=e.target.closest('[data-filter]');if(!btn)return;
+        state.filter=btn.dataset.filter;
+        document.querySelectorAll('.filter').forEach(el=>{el.classList.toggle('active',el===btn);el.setAttribute('aria-pressed',String(el===btn));});
+        renderTable();
+      });
+      $('tableBody').addEventListener('click',e=>{
+        const btn=e.target.closest('[data-action]');if(btn&&!btn.disabled)void beginAction(btn.dataset.id,btn.dataset.action);
+      });
+      window.addEventListener('storage',e=>{if(!e.key||!e.key.startsWith(INTERNAL))scheduleRefresh();});
+      setInterval(()=>{if(state.isConnected&&!state.transfer)scheduleRefresh();},30000);
+      if(location.protocol==='file:'){
+        $('originNote').classList.add('warn');
+        $('originNote').querySelector('span').textContent='Diese Datei wurde über file:// geöffnet: Der Link/QR-Code funktioniert auf anderen Geräten nur, wenn die HTML-Datei unter einer gemeinsamen HTTPS-Adresse gehostet wird. Für getrennte lokale Dateien die Session-ID manuell eingeben. IndexedDB kann bei file:// je nach Browser eingeschränkt sein.';
+      }else if(location.protocol!=='https:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){
+        $('originNote').classList.add('warn');
+        $('originNote').querySelector('span').textContent='Für WebRTC, sichere Session-IDs und Speicherzugriff wird HTTPS oder localhost empfohlen. Die Speicher beider Geräte gehören jeweils zur Origin-Adresse der App.';
+      }
+      try{await createDemo();addActivity('Testdaten geprüft und bereitgestellt');}
+      catch(e){console.error('Testdaten',e);addActivity('Testdaten teilweise nicht verfügbar');toast('Testdaten konnten nicht vollständig angelegt werden: '+e.message,true);}
+      await refreshLocal();
+      updateConnectionUI();setStatus('Nicht verbunden');
+      const session=new URL(location.href).searchParams.get('session');
+      if(session){$('joinInput').value=session;startGuest(session);}
+      if(!window.Peer)addActivity('PeerJS nicht geladen – Internetzugang erforderlich');
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>void boot());
+    else void boot();
+  })();
+  </script>
+</body>
+</html>
