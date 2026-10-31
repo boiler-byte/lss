@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0a0e13">
-  <title>LocalLink — Browser-Speicher synchronisieren</title>
+  <title>LocalLink v2 — Browser-Speicher synchronisieren</title>
   <style>
     :root {
       --bg:#090d12; --surface:#11171e; --surface2:#151e27; --surface3:#1a2530;
@@ -18,8 +18,8 @@
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(900px 440px at 90% -150px,rgba(86,139,118,.14),transparent 73%),radial-gradient(600px 450px at 0 34%,rgba(41,94,121,.08),transparent 65%),var(--bg);font-size:14px;line-height:1.5}
-    button,input{font:inherit} button{cursor:pointer} button:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
-    button:focus-visible,input:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+    button,input,select{font:inherit} button{cursor:pointer} button:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
     ::selection{background:rgba(183,248,115,.28)}
     .i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
     .i.sm{width:15px;height:15px} .i.lg{width:21px;height:21px}
@@ -108,7 +108,7 @@
     table{border-collapse:collapse;width:100%;table-layout:fixed;text-align:left}
     thead{background:#151f27}
     thead th{padding:15px 18px;border-bottom:1px solid var(--stroke);color:#8195a1;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;vertical-align:middle}
-    thead th:nth-child(1){width:28%} thead th:nth-child(2),thead th:nth-child(3){width:20%} thead th:nth-child(4){width:18%}thead th:nth-child(5){width:14%;text-align:right}
+    thead th:nth-child(1){width:28%} thead th:nth-child(2),thead th:nth-child(3){width:20%} thead th:nth-child(4){width:15%}thead th:nth-child(5){width:17%;text-align:right}
     .th-mini{font-size:10px;color:var(--subtle);letter-spacing:normal;text-transform:none;font-weight:500;display:block;margin-top:3px}
     tbody tr{border-bottom:1px solid #222c36;transition:background .12s}tbody tr:last-child{border-bottom:0}tbody tr:hover{background:#151f27}
     td{padding:16px 18px;vertical-align:middle;overflow-wrap:anywhere}
@@ -131,6 +131,7 @@
     .row-actions{display:flex;gap:7px;justify-content:flex-end;align-items:center}
     .act-btn{width:34px;height:34px;border-radius:9px;border:1px solid #3b4a56;color:#b8cbd6;background:#1a2630;display:grid;place-items:center;transition:background .16s,border-color .16s}
     .act-btn:hover:not(:disabled){background:#2b3d4b;border-color:#8fa7b5}
+    .act-btn.export:hover:not(:disabled){color:var(--mint);border-color:#65a58d}
     .act-btn.send:hover:not(:disabled){color:var(--lime);border-color:#759f52}
     .act-btn.pull:hover:not(:disabled){color:var(--blue);border-color:#578cad}
     .act-btn .i{width:16px;height:16px}
@@ -147,6 +148,35 @@
     .activity-log{padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:10px}
     .activity-log li{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:11px;color:#bac8d0;min-height:16px}
     .activity-log li .time{color:var(--subtle);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .import-drop{width:min(100%,610px);display:flex;align-items:center;gap:13px;margin-top:24px;padding:14px 16px;border:1px dashed #4c6956;border-radius:13px;background:rgba(31,52,43,.46);transition:background .16s,border-color .16s}
+    .import-drop.dragging{border-color:var(--lime);background:rgba(90,132,70,.22)}
+    .import-symbol{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:11px;background:#263c30;color:var(--lime)}
+    .import-drop-copy{min-width:0;flex:1}.import-drop-copy strong{font-size:12px;display:block}.import-drop-copy span{color:var(--muted);font-size:11px;line-height:1.6;display:block;margin-top:2px}
+    .drag-overlay{position:fixed;z-index:120;inset:12px;background:rgba(14,26,21,.95);border:2px dashed var(--lime);border-radius:24px;display:grid;place-items:center;pointer-events:none}
+    .drag-center{text-align:center;color:var(--lime)}.drag-center .i{width:49px;height:49px}.drag-center strong{display:block;font-size:27px;margin-top:14px;color:var(--text)}.drag-center span{display:block;color:var(--muted);margin-top:5px}
+    .modal-backdrop{position:fixed;inset:0;z-index:110;background:rgba(2,6,9,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+    .modal-card{width:min(720px,100%);max-height:calc(100vh - 36px);overflow-y:auto;background:#131b23;border:1px solid #44544f;border-radius:18px;box-shadow:0 30px 85px rgba(0,0,0,.65)}
+    .modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:23px 25px 19px;border-bottom:1px solid var(--stroke)}
+    .modal-kicker{font-size:10px;font-weight:800;letter-spacing:1.55px;color:var(--lime);margin-bottom:6px;text-transform:uppercase}.modal-header h2{font-size:20px;letter-spacing:-.5px}
+    .modal-header p{color:var(--muted);font-size:12px;margin-top:5px;overflow-wrap:anywhere}
+    .modal-body{padding:21px 25px 24px}.field-label{display:block;font-size:11px;letter-spacing:.5px;font-weight:760;color:#b7c8d0;margin-bottom:9px}
+    .field-help{font-size:11px;color:var(--subtle);line-height:1.5;margin-top:7px}.modal-body .text-input{width:100%;font-size:13px;flex:none}
+    .modal-meta{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 21px}.meta-badge{font-size:11px;padding:6px 10px;background:#1c2a34;border:1px solid #31434d;border-radius:7px;color:#c3d3da}
+    .import-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:19px 0}
+    .import-pane{border:1px solid var(--stroke2);background:#101820;border-radius:12px;padding:16px;min-width:0}
+    .import-pane .pane-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1.1px;font-weight:800}.import-pane .pane-name{font-size:13px;font-weight:760;margin:9px 0 6px;overflow-wrap:anywhere}.import-pane .pane-size{font-size:25px;font-weight:770;letter-spacing:-1px}.import-pane .pane-details{font-size:11px;color:var(--muted);line-height:1.7;margin-top:7px;overflow-wrap:anywhere}
+    .import-result{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:31px;margin:16px 0;padding:0 1px}.import-result .caption{font-size:11px;color:var(--muted);margin-right:3px}
+    .import-warning{padding:12px 14px;background:#33291f;border:1px solid #56412c;border-radius:9px;color:#e9d1a7;font-size:12px;line-height:1.6}
+    .modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap}
+    .history-section{margin-top:29px}.history-box{border:1px solid var(--stroke);border-radius:14px;background:#10171e;overflow:hidden}
+    .history-items{list-style:none;margin:0;padding:0;max-height:280px;overflow-y:auto}
+    .history-items li{display:grid;grid-template-columns:minmax(0,1fr) 165px 155px;gap:16px;align-items:center;padding:13px 18px;border-bottom:1px solid #26323c;font-size:12px}.history-items li:last-child{border-bottom:0}
+    .history-name{font-weight:760;overflow-wrap:anywhere}.history-type{font-size:11px;color:var(--subtle);margin-top:2px}
+    .history-time{font-size:11px;color:var(--muted);text-align:right}.history-pill{font-size:10px;display:inline-flex;align-items:center;gap:6px;width:max-content;border-radius:7px;padding:5px 8px;font-weight:800}
+    .history-pill.sent{color:#ceefb2;background:#243827}.history-pill.received{color:#b8defa;background:#203543}
+    .history-blank{padding:24px;text-align:center;font-size:12px;color:var(--muted)}
+    .history-note{font-size:11px;color:var(--subtle);margin-top:11px}
+    .history-header-actions{display:flex;align-items:center;gap:10px}
     .page-footer{display:flex;justify-content:space-between;gap:14px;padding-top:25px;font-size:11px;color:#647682;flex-wrap:wrap}
     .link-plain{color:#b6dfae;text-decoration:none}.link-plain:hover{text-decoration:underline}
     .toast-area{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:9px;z-index:90;max-width:min(400px,calc(100vw - 32px));pointer-events:none}
@@ -159,8 +189,10 @@
     .progress-track{height:5px;border-radius:99px;background:#35444d;overflow:hidden}.progress-bar{height:100%;background:linear-gradient(90deg,var(--mint),var(--lime));border-radius:99px;width:0%;transition:width .18s}
     .transfer-desc{font-size:11px;color:#a0b4bf;margin-top:8px}
     [hidden]{display:none!important}
-    @media(max-width:1050px){.hero-metrics{width:280px}.wrap{padding-left:24px;padding-right:24px}thead th,td{padding-left:13px;padding-right:13px}thead th:nth-child(1){width:29%}thead th:nth-child(2),thead th:nth-child(3){width:19%}thead th:nth-child(4){width:18%}thead th:nth-child(5){width:15%}}
+    @media(max-width:1050px){.hero-metrics{width:280px}.wrap{padding-left:24px;padding-right:24px}thead th,td{padding-left:13px;padding-right:13px}thead th:nth-child(1){width:29%}thead th:nth-child(2),thead th:nth-child(3){width:19%}thead th:nth-child(4){width:16%}thead th:nth-child(5){width:17%}}
+    @media(max-width:780px){.history-items li{grid-template-columns:minmax(0,1fr) 120px 118px;gap:9px}.import-drop{width:100%}.empty{text-align:left;padding:25px 9px}.empty-icon{margin:0 0 12px}.empty p{margin:7px 0 0;max-width:340px}}
     @media(max-width:780px){.hero{align-items:stretch;flex-direction:column;gap:22px}.hero-metrics{width:100%}.connection-grid,.bottom-grid{grid-template-columns:1fr}.hero{padding-top:29px}.compare-section{margin-top:29px}.chip-top{display:none}table{min-width:790px}.nav-right{gap:8px}.brand-desc{letter-spacing:1.1px}.section-tip{display:none}.section-title{font-size:16px}}
+    @media(max-width:500px){.import-drop{flex-wrap:wrap;gap:10px}.import-drop .button{width:100%}.modal-header{padding:18px}.modal-body{padding:18px}.import-comparison{grid-template-columns:1fr;gap:9px}.import-pane{padding:13px}.history-items li{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:11px 13px}.history-time{grid-column:1/-1;text-align:left}.history-header-actions .button{min-height:34px}.modal-actions{position:sticky;bottom:0;z-index:2;background:#131b23;padding:12px 0 9px;margin-top:16px;border-top:1px solid var(--stroke)}}
     @media(max-width:500px){.wrap{padding-left:15px;padding-right:15px}.topbar-inner{min-height:67px}.brand-symbol{width:34px;height:34px}.brand-word{font-size:17px}.brand-desc{font-size:9px}.connect-status{font-size:11px}h1{letter-spacing:-1.5px;font-size:37px}.conn-card{padding:19px}.invite{grid-template-columns:minmax(0,1fr) 102px;gap:10px}.qr-frame{width:102px;min-height:102px}.qr-frame canvas,.qr-frame img{max-width:88px!important;max-height:88px!important}.tools{width:100%}.search-wrap{flex:1}.search-wrap input{width:100%}.button .mobile-hide{display:none}.form-row .button{padding-left:11px;padding-right:11px}.table-footer{align-items:flex-start;flex-direction:column}.hero-actions .button{flex:1}.metric{padding:15px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
   </style>
@@ -184,6 +216,8 @@
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
     <symbol id="i-zap" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/></symbol>
     <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-zip" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M10 3v3m0 2v3m0 2v3m-2 2h4v-3H8z"/></symbol>
+    <symbol id="i-upload-file" viewBox="0 0 24 24"><path d="M5 3h10l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3Z"/><path d="M15 3v5h5M12 18V11m-3 3 3-3 3 3"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -205,9 +239,11 @@
         <div class="eyebrow">01 / Peer-to-peer Synchronisierung</div>
         <h1>Dein Speicher.<br><span class="accent">Auf beiden Geräten.</span></h1>
         <p class="hero-desc">Vergleiche localStorage-Einträge und IndexedDB-Datenbanken direkt zwischen zwei Browsern. Du entscheidest als Host, welche Daten gesendet oder übernommen werden.</p>
-        <div class="hero-actions">
-          <button class="button" id="modifyDemoBtn"><svg class="i sm"><use href="#i-zap"/></svg> Testdaten verändern</button>
-          <button class="button ghost" id="addDbBtn"><svg class="i sm"><use href="#i-database"/></svg> Datenbank hinzufügen</button>
+        <div class="import-drop" id="importDrop" aria-label="ZIP-Archiv hier ablegen oder auswählen">
+          <div class="import-symbol"><svg class="i lg"><use href="#i-zip"/></svg></div>
+          <div class="import-drop-copy"><strong>Speicher aus ZIP importieren</strong><span>ZIP hier ablegen oder Datei wählen · exakt eine JSON-Datei im Archiv</span></div>
+          <button class="button primary slim" type="button" id="chooseImportBtn"><svg class="i sm"><use href="#i-upload-file"/></svg> ZIP auswählen</button>
+          <input type="file" id="importFileInput" accept=".zip,application/zip,application/x-zip-compressed" hidden aria-label="ZIP für den Import auswählen">
         </div>
       </div>
       <div class="hero-metrics" aria-label="Statistik">
@@ -256,6 +292,8 @@
           <button class="filter" data-filter="ls" aria-pressed="false">localStorage</button>
           <button class="filter" data-filter="db" aria-pressed="false">IndexedDB</button>
           <button class="filter" data-filter="diff" aria-pressed="false">Unterschiede</button>
+          <button class="filter" data-filter="sent" aria-pressed="false">Gesendet <span id="sentFilterCount">0</span></button>
+          <button class="filter" data-filter="received" aria-pressed="false">Empfangen <span id="receivedFilterCount">0</span></button>
         </div>
         <div class="tools"><div class="search-wrap"><svg class="i"><use href="#i-search"/></svg><input id="searchInput" placeholder="Speicher durchsuchen …" aria-label="Speicher durchsuchen"></div><button class="button icononly" id="refreshBtn" title="Beide Seiten neu einlesen" aria-label="Speicher neu einlesen"><svg class="i sm"><use href="#i-refresh"/></svg></button></div>
       </div>
@@ -266,22 +304,56 @@
             <tbody id="tableBody"></tbody>
           </table>
         </div>
-        <div class="table-footer"><div class="foot-legend"><span><span class="legend-arrow">↑</span> An Gegenstelle senden</span><span><span class="legend-arrow blue">↓</span> Von Gegenstelle holen</span></div><span id="tableFootCount">Speicher wird eingelesen …</span></div>
+        <div class="table-footer"><div class="foot-legend"><span><svg class="i sm"><use href="#i-zip"/></svg> ZIP exportieren</span><span><span class="legend-arrow">↑</span> An Gegenstelle senden</span><span><span class="legend-arrow blue">↓</span> Von Gegenstelle holen</span></div><span id="tableFootCount">Speicher wird eingelesen …</span></div>
       </div>
+    </section>
+
+    <section class="history-section" aria-labelledby="historyHeading">
+      <div class="section-header">
+        <h2 class="section-title" id="historyHeading"><span class="section-no">03</span> Übertragungsverlauf</h2>
+        <div class="history-header-actions"><span class="section-tip">Erfolgreiche Peer-Transfers auf diesem Gerät</span><button class="button slim ghost" id="clearHistoryBtn" type="button">Verlauf löschen</button></div>
+      </div>
+      <div class="history-box"><ul class="history-items" id="historyList" aria-label="Gesendete und empfangene Speichereinträge"><li class="history-blank">Noch keine Übertragungen.</li></ul></div>
+      <p class="history-note">Die Tabs „Gesendet“ und „Empfangen“ filtern die Speichertabelle nach Einträgen aus diesem Verlauf. Die Historie bleibt nach einem Neuladen auf diesem Browser erhalten.</p>
     </section>
 
     <div class="bottom-grid">
       <section class="card info-card" aria-label="Wichtige Hinweise">
         <div class="info-head"><svg class="i"><use href="#i-shield"/></svg> Privater Datentransfer</div>
-        <p>Die Verbindung nutzt <strong>WebRTC DataChannels</strong>. PeerJS Cloud hilft beim Verbindungsaufbau; die Daten werden anschließend über WebRTC ausgetauscht (gegebenenfalls über einen TURN-Relay, sofern konfiguriert). <strong>Nur der Host startet Übertragungen.</strong> Eine IndexedDB-Übernahme ersetzt die komplette Zieldatenbank einschließlich ihrer Struktur. Größere Datenbanken und nicht serialisierbare Datentypen werden übersprungen.</p>
+        <p>Die Verbindung nutzt <strong>WebRTC DataChannels</strong>. PeerJS Cloud hilft beim Verbindungsaufbau. <strong>Nur der Host startet Peer-Übertragungen.</strong> ZIP-Exporte enthalten genau eine Datei namens <strong>storage.json</strong> im Format <strong>locallink-storage, Version 2</strong>. Der ZIP-Import prüft Format, Archivstruktur und Prüfsumme. Eine IndexedDB-Übernahme ersetzt die ganze Zieldatenbank; vorher die ZIP-Sicherung exportieren.</p>
       </section>
       <section class="card info-card" aria-label="Aktivitäten">
         <div class="info-head"><svg class="i"><use href="#i-activity"/></svg> Aktivitäten</div>
         <ul class="activity-log" id="activityList"><li><span>App wird gestartet …</span><span class="time">–</span></li></ul>
       </section>
     </div>
-    <footer class="page-footer"><span>LOCAL<span style="color:var(--lime)">LINK</span> · Eine HTML-Datei · Keine Konten</span><span>Zeiten nur für durch die App verwaltete Änderungen · Größen sind Schätzungen der serialisierten Daten</span></footer>
+    <footer class="page-footer"><span>LOCAL<span style="color:var(--lime)">LINK</span> v2 · Eine HTML-Datei · Keine Konten</span><span>Kein automatisches Anlegen von Testdaten · Zeiten nur für protokollierte Änderungen</span></footer>
   </main>
+
+  <div class="drag-overlay" id="dragOverlay" hidden aria-hidden="true"><div class="drag-center"><svg class="i"><use href="#i-zip"/></svg><strong>ZIP-Datei hier ablegen</strong><span>Genau eine JSON-Datei · LocalLink-Format</span></div></div>
+
+  <div class="modal-backdrop" id="importDialog" hidden role="presentation">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importDialogTitle" aria-describedby="importDialogDesc">
+      <div class="modal-header">
+        <div><div class="modal-kicker">ZIP-Import prüfen</div><h2 id="importDialogTitle">Import vorbereiten</h2><p id="importDialogDesc">Quelldaten prüfen, Zielname wählen und Speicherstände vergleichen.</p></div>
+        <button type="button" class="button icononly ghost" id="closeImportBtn" aria-label="Dialog schließen"><svg class="i sm"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta" id="importMeta"></div>
+        <label class="field-label" for="importTargetInput">Zielname auf diesem Gerät</label>
+        <input id="importTargetInput" class="text-input" type="text" list="importTargetOptions" maxlength="512" autocomplete="off" spellcheck="false" placeholder="Neuen Namen eingeben oder vorhandenen wählen">
+        <datalist id="importTargetOptions"></datalist>
+        <div class="field-help">Vorgabe ist der ZIP-Dateiname ohne „.zip“. Du kannst einen neuen Namen eingeben oder eine bestehende Datenbank bzw. einen Schlüssel aus der Liste wählen.</div>
+        <div class="import-comparison">
+          <div class="import-pane" id="importSourcePane"></div>
+          <div class="import-pane" id="importTargetPane"></div>
+        </div>
+        <div class="import-result" id="importComparisonResult" aria-live="polite"></div>
+        <div class="import-warning" id="importWarning"></div>
+        <div class="modal-actions"><button type="button" class="button" id="cancelImportBtn">Abbrechen</button><button type="button" class="button primary" id="confirmImportBtn"><svg class="i sm"><use href="#i-down"/></svg> Importieren</button></div>
+      </div>
+    </div>
+  </div>
 
   <div class="transfer" id="transferPanel" hidden role="status" aria-live="polite"><div class="transfer-head"><span id="transferTitle">Übertragung läuft</span><span id="transferPercent">0 %</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="transfer-desc" id="transferDesc">Daten werden vorbereitet …</div></div>
   <div class="toast-area" id="toastArea" aria-live="polite"></div>
@@ -1571,7 +1643,11 @@ module.exports = QRCode;
     const DB_REGISTRY_KEY = INTERNAL + 'database_registry_v1';
     const SEED_LS_KEY = INTERNAL + 'seed_ls_v1';
     const SEED_DB_KEY = INTERNAL + 'seed_db_v1';
-    const DEMO_DB = 'locallink_demo';
+    const HISTORY_KEY = INTERNAL + 'transfer_history_v2';
+    const ZIP_FORMAT = 'locallink-storage';
+    const ZIP_VERSION = 2;
+    const MAX_ZIP_BYTES = 32 * 1024 * 1024;
+    const MAX_JSON_BYTES = 25 * 1024 * 1024;
     const MAX_CHARS = 20 * 1024 * 1024;
     const MAX_RECORDS = 25000;
     const CHUNK = 12 * 1024;
@@ -1582,7 +1658,7 @@ module.exports = QRCode;
       local:[], remote:[], cache:new Map(), filter:'all', search:'', activity:[],
       metadata:{}, pendingTimes:new Map(), scanning:false, rescan:false,
       transfer:null, incoming:null, outgoing:null, pendingPullId:null,
-      refreshTimer:null
+      refreshTimer:null, history:[], importCandidate:null, importBusy:false, importReadBusy:false, dragDepth:0
     };
 
     function esc(s) {
@@ -1638,6 +1714,24 @@ module.exports = QRCode;
       let a=2166136261,b=2166136261^0x9e3779b9;
       for(let i=0;i<s.length;i++){const n=s.charCodeAt(i);a=Math.imul(a^n,16777619);b=Math.imul(b^(n>>>8),16777619);}
       return 'fnv:'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
+    }
+    function persistHistory() {
+      try { localStorage.setItem(HISTORY_KEY,JSON.stringify(state.history)); }
+      catch(e) { console.warn('Übertragungsverlauf nicht speicherbar',e); }
+    }
+    function recordTransfer(id,mode) {
+      if(!id||!['send','pull','receive'].includes(mode))return;
+      const direction=mode==='send'?'sent':'received';
+      const kind=id.startsWith('db:')?'db':'ls';
+      state.history.unshift({id,kind,name:id.slice(3),direction,time:Date.now()});
+      state.history=state.history.slice(0,150);
+      persistHistory();renderHistory();
+    }
+    function renderHistory() {
+      const list=$('historyList');
+      if(!state.history.length){list.innerHTML='<li class="history-blank">Noch keine erfolgreichen Übertragungen. Nach dem Senden oder Empfangen erscheinen sie hier.</li>';}
+      else list.innerHTML=state.history.map(x=>`<li><div><div class="history-name">${esc(x.name)}</div><div class="history-type">${x.kind==='db'?'IndexedDB':'localStorage'}</div></div><span class="history-pill ${x.direction==='sent'?'sent':'received'}">${icon(x.direction==='sent'?'up':'down')} ${x.direction==='sent'?'Gesendet':'Empfangen'}</span><span class="history-time">${esc(formatDate(x.time))}</span></li>`).join('');
+      $('clearHistoryBtn').disabled=!state.history.length;
     }
     function addActivity(msg) {
       state.activity.unshift({msg:String(msg),time:timeNow()});
@@ -1970,9 +2064,9 @@ module.exports = QRCode;
         req.onblocked=()=>{clearTimeout(timer);reject(new Error('Datenbank ist in einem anderen Tab geöffnet.'));};
       });
     }
-    async function importDatabase(data) {
+    async function importDatabase(data,options={}) {
       if(!data || data.kind!=='db' || typeof data.name!=='string' || !Number.isInteger(data.version) || data.version<1 || !Array.isArray(data.stores))throw new Error('Ungültiger IndexedDB-Snapshot.');
-      if(data.name.startsWith(INTERNAL))throw new Error('Interner Datenbankname ist nicht zulässig.');
+      if(data.name.startsWith(INTERNAL)&&!options.allowInternal)throw new Error('Interner Datenbankname ist nicht zulässig.');
       // Decode and validate everything before deleting the destination database.
       const prepared=[];
       for(const s of data.stores){
@@ -2006,18 +2100,29 @@ module.exports = QRCode;
           await finished;
         }
       }finally{db.close();}
-      registerDB(data.name);
+      if(!options.skipRegister)registerDB(data.name);
+    }
+    async function preflightDatabaseSnapshot(snapshot) {
+      const tempName=INTERNAL+'zip_preflight_'+txId();
+      try {
+        await importDatabase({...snapshot,name:tempName},{allowInternal:true,skipRegister:true});
+      } finally {
+        // A disposable database proves that schema, values and unique indexes can be applied
+        // before the real destination is deleted. It never appears in the storage table.
+        try {await deleteDB(tempName);}
+        catch(e) {throw new Error('Temporäre Importprüfung konnte nicht bereinigt werden: '+e.message);}
+      }
     }
     function registerDB(name) {
       const names=new Set(loadJson(DB_REGISTRY_KEY,[]));names.add(name);
       localStorage.setItem(DB_REGISTRY_KEY,JSON.stringify([...names]));
     }
     async function databaseNames() {
-      const names=new Set(loadJson(DB_REGISTRY_KEY,[]).filter(x=>typeof x==='string'));
+      const names=new Set(loadJson(DB_REGISTRY_KEY,[]).filter(x=>typeof x==='string'&&!x.startsWith(INTERNAL)));
       if(typeof indexedDB.databases==='function'){
         try{
           const found=await indexedDB.databases();
-          const existing=new Set(found.map(d=>d.name).filter(Boolean));
+          const existing=new Set(found.map(d=>d.name).filter(n=>n&&!n.startsWith(INTERNAL)));
           for(const name of [...names])if(!existing.has(name))names.delete(name);
           for(const name of existing)names.add(name);
         }catch(e){console.warn('Datenbank-Auflistung nicht unterstützt',e);}
@@ -2109,11 +2214,17 @@ module.exports = QRCode;
       $('remoteStat').textContent=state.isConnected?state.remote.length:'–';
       $('diffStat').textContent=state.isConnected?diffs:'–';
       $('allFilterCount').textContent=' '+ids.length;
+      const sentIds=new Set(state.history.filter(x=>x.direction==='sent').map(x=>x.id));
+      const receivedIds=new Set(state.history.filter(x=>x.direction==='received').map(x=>x.id));
+      $('sentFilterCount').textContent=sentIds.size;
+      $('receivedFilterCount').textContent=receivedIds.size;
       const all=ids.filter(id=>{
         const item=l.get(id)||r.get(id);
         if(state.filter==='ls'&&item.kind!=='ls')return false;
         if(state.filter==='db'&&item.kind!=='db')return false;
         if(state.filter==='diff'&&!diffInfo(l.get(id),r.get(id)).different)return false;
+        if(state.filter==='sent'&&!sentIds.has(id))return false;
+        if(state.filter==='received'&&!receivedIds.has(id))return false;
         if(state.search&&!item.name.toLowerCase().includes(state.search))return false;
         return true;
       });
@@ -2123,24 +2234,25 @@ module.exports = QRCode;
         const pills=info.pills.map(([type,label])=>`<span class="pill ${type}">${esc(label)}</span>`).join('');
         const disabledPush=!(canControl()&&a&&!a.error);
         const disabledPull=!(canControl()&&b&&!b.error);
+        const disabledExport=!(a&&!a.error)||state.importBusy;
         const detail=item.kind==='db'?`IndexedDB · ${Number(item.storeCount)||0} Object Stores · v${Number(item.version)||'?'}`:'localStorage · Schlüssel';
         return `<tr>
           <td><div class="entry"><div class="entry-icon ${item.kind==='db'?'db':''}">${icon(item.kind==='db'?'database':'storage')}</div><div><div class="entry-name" title="${esc(item.name)}">${esc(item.name)}</div><div class="entry-detail">${esc(detail)}</div></div></div></td>
           <td>${rowSide(a)}</td><td>${rowSide(b,!state.isConnected)}</td>
           <td><div class="compare-pills">${pills}</div></td>
-          <td><div class="row-actions"><button class="act-btn send" data-action="send" data-id="${esc(id)}" ${disabledPush?'disabled':''} title="An Gegenstelle senden" aria-label="${esc(item.name)} an Gegenstelle senden">${icon('up')}</button><button class="act-btn pull" data-action="pull" data-id="${esc(id)}" ${disabledPull?'disabled':''} title="Von Gegenstelle holen" aria-label="${esc(item.name)} von Gegenstelle holen">${icon('down')}</button></div></td>
+          <td><div class="row-actions"><button class="act-btn export" data-action="export" data-id="${esc(id)}" ${disabledExport?'disabled':''} title="Als ZIP exportieren" aria-label="${esc(item.name)} als ZIP exportieren">${icon('zip')}</button><button class="act-btn send" data-action="send" data-id="${esc(id)}" ${disabledPush?'disabled':''} title="An Gegenstelle senden" aria-label="${esc(item.name)} an Gegenstelle senden">${icon('up')}</button><button class="act-btn pull" data-action="pull" data-id="${esc(id)}" ${disabledPull?'disabled':''} title="Von Gegenstelle holen" aria-label="${esc(item.name)} von Gegenstelle holen">${icon('down')}</button></div></td>
         </tr>`;
       });
       if(rows.length){$('tableBody').innerHTML=rows.join('');}
       else{
-        const title=state.search?'Keine Treffer':state.filter==='diff'?'Keine Unterschiede':'Noch keine Speichereinträge';
-        const detail=state.search?'Versuche einen anderen Suchbegriff.':state.filter==='diff'?'Beide Geräte haben für die erfassten Einträge denselben Stand.':'Über die Testdaten lassen sich sofort Beispiele erzeugen.';
+        const title=state.search?'Keine Treffer':state.filter==='diff'?'Keine Unterschiede':state.filter==='sent'?'Noch nichts gesendet':state.filter==='received'?'Noch nichts empfangen':'Noch keine Speichereinträge';
+        const detail=state.search?'Versuche einen anderen Suchbegriff.':state.filter==='diff'?'Beide Geräte haben für die erfassten Einträge denselben Stand.':state.filter==='sent'||state.filter==='received'?'Erfolgreiche Übertragungen werden automatisch protokolliert.':'Wähle eine ZIP-Datei oder ziehe sie in die Importfläche.';
         $('tableBody').innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">${icon('database')}</div><div class="empty-title">${title}</div><p>${detail}</p></div></td></tr>`;
       }
       $('tableFootCount').textContent=`${all.length} von ${ids.length} Einträgen angezeigt`;
     }
-    function startTransfer(label,tx,mode) {
-      state.transfer={label,tx,mode};
+    function startTransfer(label,tx,mode,id) {
+      state.transfer={label,tx,mode,id};
       $('transferTitle').textContent=label;
       $('transferPanel').hidden=false;
       setProgress(0,'Daten werden vorbereitet …');renderTable();
@@ -2156,6 +2268,7 @@ module.exports = QRCode;
     }
     function stopTransfer(ok,msg,tx) {
       if(state.transfer&&state.transfer.tx!==tx)return;
+      if(ok&&state.transfer)recordTransfer(state.transfer.id,state.transfer.mode);
       if(msg){addActivity(msg);toast(msg,!ok);}
       clearTransfer();
       scheduleRefresh();
@@ -2210,11 +2323,11 @@ module.exports = QRCode;
       }
       const tx=txId();
       if(direction==='send'){
-        startTransfer(`Senden: ${source.name}`,tx,'send');
+        startTransfer(`Senden: ${source.name}`,tx,'send',id);
         addActivity(`${kind} zum Senden ausgewählt`);
         await sendSnapshot(id,tx);
       }else{
-        startTransfer(`Empfangen: ${source.name}`,tx,'pull');
+        startTransfer(`Empfangen: ${source.name}`,tx,'pull',id);
         state.pendingPullId=id;
         addActivity(`${kind} angefordert`);
         try{send({type:'request-upload',tx,id});setProgress(0,'Warte auf Daten von der Gegenstelle …');}
@@ -2240,7 +2353,7 @@ module.exports = QRCode;
       if(state.role==='host' && (!state.transfer||state.transfer.mode!=='pull'||state.transfer.tx!==msg.tx||state.pendingPullId!==msg.id))return;
       if(state.role==='guest'){
         if(state.transfer){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Empfänger ist beschäftigt.'});return;}
-        startTransfer(`Empfangen: ${msg.id.slice(3)}`,msg.tx,'receive');
+        startTransfer(`Empfangen: ${msg.id.slice(3)}`,msg.tx,'receive',msg.id);
       }
       state.incoming={tx:msg.tx,id:msg.id,total:msg.total,length:msg.length,hash:msg.hash,mtime:Number.isFinite(msg.mtime)?msg.mtime:null,parts:[],next:0};
       send({type:'transfer-ack',tx:msg.tx,next:0});
@@ -2291,7 +2404,7 @@ module.exports = QRCode;
           if(state.role!=='guest'||typeof msg.tx!=='string'||typeof msg.id!=='string')return;
           if(state.transfer){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Bereits eine Übertragung aktiv.'});return;}
           if(!state.local.find(x=>x.id===msg.id&&!x.error)){send({type:'transfer-result',tx:msg.tx,ok:false,error:'Angeforderter Eintrag ist nicht verfügbar.'});return;}
-          startTransfer(`Senden: ${msg.id.slice(3)}`,msg.tx,'send');
+          startTransfer(`Senden: ${msg.id.slice(3)}`,msg.tx,'send',msg.id);
           await sendSnapshot(msg.id,msg.tx);break;
         }
         case 'transfer-start':await receiveStart(msg);break;
@@ -2306,81 +2419,342 @@ module.exports = QRCode;
       }
     }
 
-    async function createDemo() {
-      if(!localStorage.getItem(SEED_LS_KEY)){
-        const date=new Date().toISOString();
-        const values={
-          'demo:profil':JSON.stringify({name:'Testnutzer',device:'Browser',revision:1,updatedAt:date},null,2),
-          'demo:einstellungen':JSON.stringify({theme:'dark',language:'de',notifications:true},null,2),
-          'demo:letzterBesuch':date
-        };
-        for(const [k,v] of Object.entries(values)){localStorage.setItem(k,v);markTime('ls:'+k);}
-        localStorage.setItem(SEED_LS_KEY,'1');
+    /* ZIP32, one JSON file per archive. Deflate uses built-in Web Streams;
+       no ZIP libraries or additional network requests are required. */
+    const ZIP_CRC_TABLE=(()=>{
+      const t=new Uint32Array(256);
+      for(let i=0;i<256;i++){
+        let c=i;
+        for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);
+        t[i]=c>>>0;
       }
-      registerDB(DEMO_DB);
-      if(!localStorage.getItem(SEED_DB_KEY)&&globalThis.indexedDB){
-        const db=await openDB(DEMO_DB,1,opened=>{
-          if(!opened.objectStoreNames.contains('notes')){
-            const store=opened.createObjectStore('notes',{keyPath:'id'});
-            store.createIndex('updatedAt','updatedAt');
-          }
-          if(!opened.objectStoreNames.contains('events')){
-            const store=opened.createObjectStore('events',{keyPath:'id',autoIncrement:true});
-            store.createIndex('createdAt','createdAt');
-          }
-        });
-        try{
-          if(db.objectStoreNames.contains('notes')&&db.objectStoreNames.contains('events')){
-            const tx=db.transaction(['notes','events'],'readwrite');const done=txDone(tx);
-            const now=new Date().toISOString();
-            tx.objectStore('notes').put({id:'welcome',title:'Willkommen bei LocalLink',text:'Diese kleine Datenbank wird nur für den Sync-Test angelegt.',updatedAt:now});
-            tx.objectStore('notes').put({id:'checklist',title:'Teste eine Änderung',text:'Klicke auf „Testdaten verändern“ und vergleiche beide Seiten.',updatedAt:now});
-            tx.objectStore('events').add({type:'demo-created',createdAt:now,source:'LocalLink'});
-            await done;
-          }
-        }finally{db.close();}
-        markTime('db:'+DEMO_DB);
-        localStorage.setItem(SEED_DB_KEY,'1');
-      }
+      return t;
+    })();
+    function zipCrc32(array) {
+      let c=0xffffffff;
+      for(const x of array)c=ZIP_CRC_TABLE[(c^x)&255]^(c>>>8);
+      return (c^0xffffffff)>>>0;
     }
-    async function modifyDemo() {
-      $('modifyDemoBtn').disabled=true;
-      try{
-        const key='demo:profil';
-        const prev=loadJson(key,{});
-        const version=(Number(prev.revision)||0)+1;
-        const now=new Date().toISOString();
-        localStorage.setItem(key,JSON.stringify({...prev,revision:version,updatedAt:now},null,2));
-        localStorage.setItem('demo:letzterBesuch',now);
-        markTime('ls:'+key);markTime('ls:demo:letzterBesuch');
-        const db=await openDB(DEMO_DB);
-        try{
-          const tx=db.transaction(['notes','events'],'readwrite');const done=txDone(tx);
-          tx.objectStore('notes').put({id:'welcome',title:'Willkommen bei LocalLink',text:'Zuletzt geändert: '+now+' (Revision '+version+')',updatedAt:now});
-          tx.objectStore('events').add({type:'demo-updated',revision:version,createdAt:now});
-          await done;
-        }finally{db.close();}
-        markTime('db:'+DEMO_DB);
-        addActivity('Testdaten auf diesem Gerät verändert');
-        toast('Testdaten aktualisiert (Revision '+version+').');
-        scheduleRefresh();
-      }catch(e){toast('Testdaten konnten nicht geändert werden: '+e.message,true);}
-      finally{$('modifyDemoBtn').disabled=false;}
+    function put16(view,pos,n){view.setUint16(pos,n,true);}
+    function put32(view,pos,n){view.setUint32(pos,n>>>0,true);}
+    async function compressZipContent(data) {
+      if(typeof CompressionStream!=='function')return {data,method:0};
+      try {
+        const stream=new Blob([data]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+        const result=new Uint8Array(await new Response(stream).arrayBuffer());
+        if(result.length<data.length)return {data:result,method:8};
+      }catch(e){console.info('ZIP-Kompression nicht verfügbar, nutze STORE',e);}
+      return {data,method:0};
     }
-    async function addNamedDatabase() {
-      const name=prompt('Name einer IndexedDB auf diesem Origin eingeben:');
-      if(name===null)return;
-      if(!name.trim()||name.length>200||name.startsWith(INTERNAL))return toast('Ungültiger Datenbankname.',true);
-      try{
-        if(typeof indexedDB.databases==='function'){
-          const list=await indexedDB.databases();
-          if(!list.some(db=>db.name===name))return toast('Auf diesem Origin wurde keine Datenbank mit diesem Namen gefunden.',true);
+    async function singleJsonZip(json) {
+      const original=new TextEncoder().encode(json);
+      if(original.length>MAX_JSON_BYTES)throw new Error('JSON überschreitet das ZIP-Limit von 25 MB.');
+      const compressed=await compressZipContent(original);
+      const filename=new TextEncoder().encode('storage.json');
+      const localLen=30+filename.length, centralLen=46+filename.length;
+      const output=new Uint8Array(localLen+compressed.data.length+centralLen+22);
+      const view=new DataView(output.buffer);
+      const crc=zipCrc32(original);
+      put32(view,0,0x04034b50);put16(view,4,20);put16(view,6,0x0800);put16(view,8,compressed.method);
+      put32(view,14,crc);put32(view,18,compressed.data.length);put32(view,22,original.length);
+      put16(view,26,filename.length);put16(view,28,0);
+      output.set(filename,30);output.set(compressed.data,localLen);
+      const c=localLen+compressed.data.length;
+      put32(view,c,0x02014b50);put16(view,c+4,20);put16(view,c+6,20);put16(view,c+8,0x0800);put16(view,c+10,compressed.method);
+      put32(view,c+16,crc);put32(view,c+20,compressed.data.length);put32(view,c+24,original.length);
+      put16(view,c+28,filename.length);put16(view,c+30,0);put16(view,c+32,0);
+      put16(view,c+34,0);put16(view,c+36,0);put32(view,c+38,0);put32(view,c+42,0);
+      output.set(filename,c+46);
+      const e=c+centralLen;
+      put32(view,e,0x06054b50);put16(view,e+4,0);put16(view,e+6,0);
+      put16(view,e+8,1);put16(view,e+10,1);put32(view,e+12,centralLen);put32(view,e+16,c);put16(view,e+20,0);
+      return new Blob([output],{type:'application/zip'});
+    }
+    async function unzipDeflateLimited(bytesIn,method) {
+      if(method===0)return bytesIn;
+      if(method!==8)throw new Error('ZIP-Kompressionsmethode nicht unterstützt. Erlaubt: STORE oder DEFLATE.');
+      if(typeof DecompressionStream!=='function')throw new Error('Dieser Browser unterstützt keine DEFLATE-Entpackung.');
+      let reader;
+      try {
+        reader=new Blob([bytesIn]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+        const chunks=[];let size=0;
+        while(true){
+          const {done,value}=await reader.read();
+          if(done)break;
+          size+=value.length;
+          if(size>MAX_JSON_BYTES){await reader.cancel().catch(()=>{});throw new Error('Entpackte JSON-Datei überschreitet 25 MB.');}
+          chunks.push(value);
         }
-        registerDB(name);scheduleRefresh();toast('Datenbank in die Liste aufgenommen.');
-      }catch(e){toast('Datenbank konnte nicht registriert werden: '+e.message,true);}
+        const out=new Uint8Array(size);let offset=0;
+        for(const chunk of chunks){out.set(chunk,offset);offset+=chunk.length;}
+        return out;
+      } catch(e) {
+        if(e.message?.includes('25 MB'))throw e;
+        throw new Error('ZIP konnte nicht entpackt werden: '+e.message);
+      }
     }
+    async function parseSingleJsonZip(file) {
+      if(file.size>MAX_ZIP_BYTES)throw new Error('ZIP-Datei zu groß (maximal 32 MB).');
+      if(file.size<30+46+22)throw new Error('ZIP-Datei ist zu kurz oder beschädigt.');
+      const b=new Uint8Array(await file.arrayBuffer()),v=new DataView(b.buffer);
+      let eocd=-1;
+      for(let i=b.length-22;i>=Math.max(0,b.length-65557);i--){
+        if(v.getUint32(i,true)===0x06054b50 && i+22+v.getUint16(i+20,true)===b.length){eocd=i;break;}
+      }
+      if(eocd<0)throw new Error('Kein gültiges ZIP-Endverzeichnis gefunden.');
+      if(v.getUint16(eocd+4,true)!==0||v.getUint16(eocd+6,true)!==0||
+         v.getUint16(eocd+8,true)!==1||v.getUint16(eocd+10,true)!==1)
+        throw new Error('Import erlaubt genau eine JSON-Datei, keine weiteren Einträge oder ZIP-Teile.');
+      const centralLen=v.getUint32(eocd+12,true),centralStart=v.getUint32(eocd+16,true);
+      if(centralLen===0xffffffff||centralStart===0xffffffff)throw new Error('ZIP64 wird nicht unterstützt.');
+      if(centralStart>eocd||centralLen>eocd-centralStart||centralStart+46>eocd)
+        throw new Error('ZIP-Verzeichnis ist beschädigt.');
+      const c=centralStart;
+      if(v.getUint32(c,true)!==0x02014b50)throw new Error('ZIP-Verzeichnis enthält keinen gültigen Dateieintrag.');
+      const flags=v.getUint16(c+8,true),method=v.getUint16(c+10,true);
+      const checksum=v.getUint32(c+16,true),sizePacked=v.getUint32(c+20,true),sizeRaw=v.getUint32(c+24,true);
+      const nameLen=v.getUint16(c+28,true),extraLen=v.getUint16(c+30,true),commentLen=v.getUint16(c+32,true);
+      const localOffset=v.getUint32(c+42,true);
+      if((flags&1)!==0)throw new Error('Passwortgeschützte ZIPs werden nicht unterstützt.');
+      if((flags&0x40)!==0)throw new Error('Verschlüsselte ZIPs sind nicht zulässig.');
+      if(sizeRaw===0xffffffff||sizePacked===0xffffffff||localOffset===0xffffffff)throw new Error('ZIP64 wird nicht unterstützt.');
+      if(sizeRaw>MAX_JSON_BYTES)throw new Error('Entpackte JSON-Datei überschreitet 25 MB.');
+      if(c+46+nameLen+extraLen+commentLen!==c+centralLen||c+centralLen>eocd)
+        throw new Error('ZIP enthält unerwartete oder beschädigte Verzeichniseinträge.');
+      const filename=new TextDecoder('utf-8',{fatal:true}).decode(b.subarray(c+46,c+46+nameLen));
+      if(!/^[^\\/]+\.json$/i.test(filename)||filename==='.'||filename==='..')
+        throw new Error('Im ZIP muss genau eine JSON-Datei ohne Unterordner liegen.');
+      if(localOffset+30>b.length||v.getUint32(localOffset,true)!==0x04034b50)
+        throw new Error('ZIP-Dateiheader fehlt.');
+      if(v.getUint16(localOffset+8,true)!==method)throw new Error('ZIP-Kompressionsangaben sind widersprüchlich.');
+      const localNameLen=v.getUint16(localOffset+26,true),localExtraLen=v.getUint16(localOffset+28,true);
+      const dataStart=localOffset+30+localNameLen+localExtraLen;
+      if(dataStart>centralStart||sizePacked>centralStart-dataStart)throw new Error('ZIP-Daten sind unvollständig.');
+      const localFilename=new TextDecoder('utf-8',{fatal:true}).decode(b.subarray(localOffset+30,localOffset+30+localNameLen));
+      if(localFilename!==filename)throw new Error('ZIP-Dateiname stimmt im Archiv nicht überein.');
+      const result=await unzipDeflateLimited(b.subarray(dataStart,dataStart+sizePacked),method);
+      if(result.length!==sizeRaw)throw new Error('ZIP-Längenangaben stimmen nicht überein.');
+      if(zipCrc32(result)!==checksum)throw new Error('ZIP-Prüfsumme (CRC32) ist ungültig.');
+      const text=new TextDecoder('utf-8',{fatal:true}).decode(result);
+      if(!text.trim())throw new Error('Die JSON-Datei ist leer.');
+      let obj;
+      try {obj=JSON.parse(text);}catch(e){throw new Error('Datei enthält kein gültiges JSON: '+e.message);}
+      if(!obj||typeof obj!=='object'||Array.isArray(obj)||obj.format!==ZIP_FORMAT||obj.version!==ZIP_VERSION)
+        throw new Error('JSON entspricht nicht dem LocalLink-Format (format="locallink-storage", version=2).');
+      validateImportedSnapshot(obj.snapshot);
+      return {snapshot:obj.snapshot,mtime:Number.isFinite(obj.mtime)?obj.mtime:null,originalName:filename};
+    }
+    function validImportName(n) {
+      return typeof n==='string'&&n.length>0&&n.length<=512&&n.trim()!==''&&!n.startsWith(INTERNAL)&&!n.includes('\0');
+    }
+    function validKeyPath(k) {
+      return k===null||typeof k==='string'||(Array.isArray(k)&&k.length>0&&k.every(x=>typeof x==='string'));
+    }
+    function validateImportedSnapshot(snapshot) {
+      if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot)||!['db','ls'].includes(snapshot.kind)||!validImportName(snapshot.name))
+        throw new Error('JSON enthält keinen gültigen localStorage- oder IndexedDB-Snapshot.');
+      const content=JSON.stringify(snapshot);
+      if(content.length>MAX_CHARS)throw new Error('Snapshot überschreitet das 20-Millionen-Zeichen-Limit.');
+      if(snapshot.kind==='ls'){
+        if(typeof snapshot.value!=='string')throw new Error('localStorage benötigt einen String-Wert.');
+        return;
+      }
+      if(!Number.isInteger(snapshot.version)||snapshot.version<1||snapshot.version>0x7fffffff||!Array.isArray(snapshot.stores)||snapshot.stores.length>200)
+        throw new Error('Ungültige IndexedDB-Version oder Objektstores.');
+      const seenStores=new Set();let total=0;
+      for(const store of snapshot.stores){
+        if(!store||typeof store.name!=='string'||!store.name||store.name.length>512||seenStores.has(store.name)||!validKeyPath(store.keyPath)||typeof store.autoIncrement!=='boolean'||!Array.isArray(store.indexes)||!Array.isArray(store.records)||store.indexes.length>200)
+          throw new Error('Ungültiger oder doppelter Object Store.');
+        seenStores.add(store.name);
+        if(store.autoIncrement&&Array.isArray(store.keyPath))throw new Error('autoIncrement mit zusammengesetztem Schlüssel ist nicht zulässig.');
+        const seenIndexes=new Set();
+        for(const idx of store.indexes){
+          if(!idx||typeof idx.name!=='string'||!idx.name||seenIndexes.has(idx.name)||!validKeyPath(idx.keyPath)||idx.keyPath===null||typeof idx.unique!=='boolean'||typeof idx.multiEntry!=='boolean'||(idx.multiEntry&&Array.isArray(idx.keyPath)))
+            throw new Error('Ungültiger oder doppelter Datenbankindex.');
+          seenIndexes.add(idx.name);
+        }
+        total+=store.records.length;
+        if(total>MAX_RECORDS)throw new Error('Zu viele Datensätze (maximal '+MAX_RECORDS+').');
+        for(const rec of store.records){
+          if(!Array.isArray(rec)||rec.length!==2)throw new Error('Ungültiger Datensatz im ZIP.');
+          decodeValue(rec[0]);decodeValue(rec[1]);
+        }
+      }
+    }
+    function safeDownloadName(name) {
+      return String(name).replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').replace(/[. ]+$/g,'').slice(0,160)||'speicher';
+    }
+    function defaultNameFromZip(filename) {
+      return filename.replace(/\.zip$/i,'').trim().slice(0,512);
+    }
+    async function exportAsZip(id) {
+      if(state.importBusy||state.transfer)return;
+      const item=state.local.find(x=>x.id===id&&!x.error);
+      if(!item)return toast('Speicher auf diesem Gerät nicht verfügbar.',true);
+      const btn=Array.from($('tableBody').querySelectorAll('[data-action="export"]')).find(b=>b.dataset.id===id);
+      if(btn)btn.disabled=true;
+      try {
+        const {content,mtime}=await snapshotFromId(id);
+        const payload=JSON.stringify({format:ZIP_FORMAT,version:ZIP_VERSION,exportedAt:new Date().toISOString(),mtime,snapshot:JSON.parse(content)});
+        const zip=await singleJsonZip(payload);
+        const url=URL.createObjectURL(zip),link=document.createElement('a');
+        link.href=url;link.download=safeDownloadName(item.name)+'.zip';
+        document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),30000);
+        addActivity('ZIP exportiert: '+item.name);
+        toast('ZIP exportiert: '+item.name+' ('+formatBytes(zip.size)+')');
+      } catch(e){console.error(e);toast('ZIP-Export fehlgeschlagen: '+e.message,true);}
+      finally {if(btn)btn.disabled=false;}
+    }
+    function closeImportDialog() {
+      if(state.importBusy)return;
+      state.importCandidate=null;
+      $('importDialog').hidden=true;
+      $('importFileInput').value='';
+      $('chooseImportBtn').focus();
+    }
+    function importedPreviewName() {return $('importTargetInput').value.trim();}
+    function paneHtml(label,name,size,details) {
+      return `<div class="pane-label">${esc(label)}</div><div class="pane-name">${esc(name)}</div><div class="pane-size">${formatBytes(size)}</div><div class="pane-details">${details.map(esc).join('<br>')}</div>`;
+    }
+    function renderImportPreview() {
+      const candidate=state.importCandidate;
+      if(!candidate)return;
+      const name=importedPreviewName();
+      const valid=validImportName(name);
+      const kind=candidate.snapshot.kind;
+      const targetId=kind+':'+name;
+      const target=valid?state.local.find(x=>x.id===targetId):null;
+      const rewritten={...candidate.snapshot,name};
+      const text=JSON.stringify(rewritten);
+      const sourceSize=kind==='db'?bytes(text):bytes(name)+bytes(rewritten.value);
+      const sourceDetails=kind==='db'?[`${rewritten.stores.length} Object Stores · ${rewritten.stores.reduce((n,s)=>n+s.records.length,0)} Datensätze`,`Version ${rewritten.version}`,`Stand: ${formatDate(candidate.mtime)}`]:['localStorage · Textwert',`Stand: ${formatDate(candidate.mtime)}`];
+      $('importSourcePane').innerHTML=paneHtml('Importdatei',candidate.snapshot.name,sourceSize,sourceDetails);
+      const existing=Boolean(target);
+      const targetDetails=existing?[kind==='db'?`${target.storeCount??'–'} Stores · ${target.count??'–'} Datensätze`:'localStorage · Textwert',`Stand: ${formatDate(target.mtime)}`]:['Noch kein Speicher unter diesem Namen vorhanden','Wird beim Import neu erstellt'];
+      $('importTargetPane').innerHTML=paneHtml('Dieses Gerät',valid?name:'Ungültiger Zielname',target?.bytes??null,targetDetails);
+      let matches=false;
+      if(target&&!target.error&&state.cache.has(targetId)){
+        matches=state.cache.get(targetId).text===text;
+      }
+      const pills=[];
+      if(!valid)pills.push(['unknown','Ungültiger Zielname']);
+      else if(!existing)pills.push(['newer','Neuer Speicher']);
+      else if(target.error)pills.push(['unknown','Ziel nicht lesbar']);
+      else if(matches)pills.push(['equal','Inhalt identisch']);
+      else {
+        if(candidate.mtime!=null&&target.mtime!=null&&candidate.mtime!==target.mtime)
+          pills.push(candidate.mtime>target.mtime?['newer','Datei neuer']:['remote-newer','Ziel neuer']);
+        else pills.push(['unknown','Änderungszeit unklar']);
+        if(Number.isFinite(target.bytes))
+          pills.push(['bigger',sourceSize>target.bytes?'Datei größer':sourceSize<target.bytes?'Ziel größer':'Gleich groß']);
+      }
+      $('importComparisonResult').innerHTML=`<span class="caption">Vergleich</span>${pills.map(([type,label])=>`<span class="pill ${type}">${esc(label)}</span>`).join('')}`;
+      $('importWarning').textContent=!valid?'Bitte einen nichtleeren Namen (höchstens 512 Zeichen) eingeben. Interne LocalLink-Namen sind gesperrt.':existing?(kind==='db'?'Achtung: Diese IndexedDB wird vollständig gelöscht und mit der Importdatei neu aufgebaut. Vorher eine ZIP-Sicherung exportieren. Zur Vorprüfung wird kurzzeitig zusätzlicher Speicher benötigt.':'Achtung: Der vorhandene localStorage-Wert wird durch den Inhalt der Importdatei überschrieben.'):'Der Import erstellt einen neuen '+(kind==='db'?'IndexedDB-Speicher.':'localStorage-Schlüssel.')+' Bereits bestehende Einträge bleiben unverändert.';
+      $('confirmImportBtn').disabled=!valid||state.importBusy||Boolean(state.transfer);
+      $('confirmImportBtn').textContent=state.importBusy?'Import läuft …':existing?'Überschreiben & importieren':'Jetzt importieren';
+    }
+    async function handleImportFile(file) {
+      if(state.importReadBusy||state.importBusy)return;
+      if(!file)return;
+      state.importReadBusy=true;
+      const btn=$('chooseImportBtn');btn.disabled=true;
+      try {
+        if(!/\.zip$/i.test(file.name))throw new Error('Nur ZIP-Dateien (.zip) sind erlaubt.');
+        const parsed=await parseSingleJsonZip(file);
+        const defaultName=defaultNameFromZip(file.name);
+        if(!validImportName(defaultName))throw new Error('ZIP-Dateiname ergibt keinen zulässigen Zielnamen.');
+        state.importCandidate={...parsed,fileName:file.name,zipBytes:file.size};
+        const kind=parsed.snapshot.kind;
+        const current=state.local.filter(x=>x.kind===kind).map(x=>x.name);
+        const choices=[...new Set([parsed.snapshot.name,...current])];
+        $('importTargetOptions').innerHTML=choices.map(x=>`<option value="${esc(x)}"></option>`).join('');
+        $('importTargetInput').value=defaultName;
+        $('importMeta').innerHTML=`<span class="meta-badge">${icon('zip')} ${esc(file.name)}</span><span class="meta-badge">${kind==='db'?'IndexedDB':'localStorage'}</span><span class="meta-badge">${formatBytes(file.size)} ZIP</span><span class="meta-badge">${esc(parsed.originalName)}</span>`;
+        $('importDialog').hidden=false;
+        renderImportPreview();
+        $('importTargetInput').focus();$('importTargetInput').select();
+        addActivity('ZIP geprüft: '+file.name);
+      } catch(e) {console.error('ZIP-Importprüfung',e);toast('Import abgelehnt: '+e.message,true);addActivity('ZIP abgelehnt: '+file.name);}
+      finally {state.importReadBusy=false;btn.disabled=false;}
+    }
+    async function confirmImport() {
+      const candidate=state.importCandidate;
+      if(!candidate||state.importBusy||state.transfer)return;
+      const name=importedPreviewName();
+      if(!validImportName(name))return toast('Ungültiger Zielname.',true);
+      const snapshot={...candidate.snapshot,name};
+      try {validateImportedSnapshot(snapshot);}catch(e){return toast('Import nicht erlaubt: '+e.message,true);}
+      const id=snapshot.kind+':'+name;
+      const destination=state.local.find(x=>x.id===id);
+      if(destination){
+        const phrase=snapshot.kind==='db'?'Die bestehende IndexedDB einschließlich aller Object Stores und Datensätze wird GELÖSCHT und aus dem ZIP neu aufgebaut.':'Der vorhandene localStorage-Schlüssel wird überschrieben.';
+        if(!confirm(`„${name}“ ist bereits vorhanden. ${phrase} Wirklich fortfahren?`))return;
+      }
+      state.importBusy=true;
+      $('closeImportBtn').disabled=true;$('cancelImportBtn').disabled=true;
+      renderImportPreview();
+      try {
+        if(snapshot.kind==='ls')localStorage.setItem(name,snapshot.value);
+        else {
+          await preflightDatabaseSnapshot(snapshot);
+          await importDatabase(snapshot);
+        }
+        markTime(id,candidate.mtime);
+        state.importBusy=false;
+        closeImportDialog();
+        await refreshLocal();
+        toast('ZIP importiert: '+name);
+        addActivity('ZIP importiert: '+name);
+      } catch(e) {console.error('Import fehlgeschlagen',e);toast('ZIP-Import fehlgeschlagen: '+e.message,true);}
+      finally {
+        state.importBusy=false;
+        $('closeImportBtn').disabled=false;$('cancelImportBtn').disabled=false;
+        renderImportPreview();renderTable();
+      }
+    }
+    function setDragDisplay(active) {
+      $('dragOverlay').hidden=!active;
+      $('importDrop').classList.toggle('dragging',active);
+    }
+    function setupImportUI() {
+      $('chooseImportBtn').addEventListener('click',()=>$('importFileInput').click());
+      $('importFileInput').addEventListener('change',e=>{
+        const f=e.target.files?.[0];
+        if(e.target.files?.length>1)toast('Bitte genau eine ZIP-Datei auswählen.',true);
+        else if(f)void handleImportFile(f);
+        e.target.value='';
+      });
+      $('importTargetInput').addEventListener('input',renderImportPreview);
+      $('closeImportBtn').addEventListener('click',closeImportDialog);
+      $('cancelImportBtn').addEventListener('click',closeImportDialog);
+      $('confirmImportBtn').addEventListener('click',()=>void confirmImport());
+      $('importDialog').addEventListener('click',e=>{if(e.target===$('importDialog'))closeImportDialog();});
+      document.addEventListener('keydown',e=>{
+        if(e.key==='Escape') {setDragDisplay(false);if(!$('importDialog').hidden)closeImportDialog();}
+      });
+      // Prevent the browser from navigating to a dropped ZIP (also outside the drop zone).
+      document.addEventListener('dragenter',e=>{
+        if(e.dataTransfer?.types?.includes('Files')){e.preventDefault();setDragDisplay(true);}
+      });
+      document.addEventListener('dragover',e=>{
+        if(e.dataTransfer?.types?.includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';setDragDisplay(true);}
+      });
+      document.addEventListener('dragleave',e=>{if(!e.relatedTarget)setDragDisplay(false);});
+      document.addEventListener('drop',e=>{
+        if(!e.dataTransfer?.types?.includes('Files'))return;
+        e.preventDefault();setDragDisplay(false);
+        if(e.dataTransfer.files.length!==1)return toast('Bitte genau eine ZIP-Datei ablegen.',true);
+        void handleImportFile(e.dataTransfer.files[0]);
+      });
+    }
+
     async function boot() {
       state.metadata=loadJson(META_KEY,{});
+      state.history=loadJson(HISTORY_KEY,[]);
+      if(!Array.isArray(state.history))state.history=[];
+      state.history=state.history.filter(x=>x&&['sent','received'].includes(x.direction)&&typeof x.id==='string'&&/^(db|ls):/.test(x.id)&&typeof x.name==='string'&&['db','ls'].includes(x.kind)&&Number.isFinite(x.time)).slice(0,150);
+      renderHistory();
       if(!state.metadata||typeof state.metadata!=='object'||Array.isArray(state.metadata))state.metadata={};
       $('createHostBtn').addEventListener('click',startHost);
       $('joinForm').addEventListener('submit',e=>{
@@ -2391,8 +2765,8 @@ module.exports = QRCode;
       $('copyInviteBtn').addEventListener('click',()=>copyText(inviteUrl(state.session)));
       $('copyIdBtn').addEventListener('click',()=>copyText(state.session));
       $('refreshBtn').addEventListener('click',()=>{addActivity('Speicher wird neu eingelesen');scheduleRefresh();});
-      $('modifyDemoBtn').addEventListener('click',modifyDemo);
-      $('addDbBtn').addEventListener('click',addNamedDatabase);
+      setupImportUI();
+      $('clearHistoryBtn').addEventListener('click',()=>{if(!state.history.length||!confirm('Lokalen Übertragungsverlauf endgültig löschen?'))return;state.history=[];persistHistory();renderHistory();renderTable();addActivity('Übertragungsverlauf gelöscht');});
       $('searchInput').addEventListener('input',e=>{state.search=e.target.value.trim().toLowerCase();renderTable();});
       $('filters').addEventListener('click',e=>{
         const btn=e.target.closest('[data-filter]');if(!btn)return;
@@ -2401,7 +2775,7 @@ module.exports = QRCode;
         renderTable();
       });
       $('tableBody').addEventListener('click',e=>{
-        const btn=e.target.closest('[data-action]');if(btn&&!btn.disabled)void beginAction(btn.dataset.id,btn.dataset.action);
+        const btn=e.target.closest('[data-action]');if(btn&&!btn.disabled){if(btn.dataset.action==='export')void exportAsZip(btn.dataset.id);else void beginAction(btn.dataset.id,btn.dataset.action);}
       });
       window.addEventListener('storage',e=>{if(!e.key||!e.key.startsWith(INTERNAL))scheduleRefresh();});
       setInterval(()=>{if(state.isConnected&&!state.transfer)scheduleRefresh();},30000);
@@ -2412,8 +2786,7 @@ module.exports = QRCode;
         $('originNote').classList.add('warn');
         $('originNote').querySelector('span').textContent='Für WebRTC, sichere Session-IDs und Speicherzugriff wird HTTPS oder localhost empfohlen. Die Speicher beider Geräte gehören jeweils zur Origin-Adresse der App.';
       }
-      try{await createDemo();addActivity('Testdaten geprüft und bereitgestellt');}
-      catch(e){console.error('Testdaten',e);addActivity('Testdaten teilweise nicht verfügbar');toast('Testdaten konnten nicht vollständig angelegt werden: '+e.message,true);}
+      addActivity('ZIP-Import und Export bereit');
       await refreshLocal();
       updateConnectionUI();setStatus('Nicht verbunden');
       const session=new URL(location.href).searchParams.get('session');
